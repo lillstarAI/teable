@@ -1,37 +1,13 @@
 version: '3.9'
 
 services:
-  teable:
-    image: ghcr.io/teableio/teable:latest
-    restart: always
-    ports:
-      - '3000:3000'
-    volumes:
-      - teable-data:/app/.assets:rw
-      # you may use a bind-mounted host directory instead,
-      # so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/teable/data:/app/.assets:rw
-    env_file:
-      - .env
-    environment:
-      - TZ=${TIMEZONE}
-      - NEXT_ENV_IMAGES_ALL_REMOTE=true
-    networks:
-      - teable-standalone
-    depends_on:
-      teable-db-migrate:
-        condition: service_completed_successfully
-
   teable-db:
-    image: postgres:15.4
+    image: 'postgres:15.4'
     restart: always
     ports:
       - '42345:5432'
     volumes:
-      - teable-db:/var/lib/postgresql/data:rw
-      # you may use a bind-mounted host directory instead,
-      # so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/db/data:/var/lib/postgresql/data:rw
+      - '/data/coolify/applications/q08gwww/docker/db/data:/var/lib/postgresql/data:rw'
     environment:
       - TZ=${TIMEZONE}
       - POSTGRES_DB=${POSTGRES_DB}
@@ -39,28 +15,121 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     networks:
       - teable-standalone
+      - q08gwww
     healthcheck:
-      test: ['CMD-SHELL', "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
-      timeout: 3s
-      retries: 3
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
-  teable-db-migrate:
-    image: ghcr.io/teableio/teable-db-migrate:latest
-    environment:
-      - TZ=${TIMEZONE}
-      - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+  redis:
+    image: 'redis:alpine'
+    restart: always
+    ports:
+      - '6380:6379'
     networks:
       - teable-standalone
+      - q08gwww
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - 'q08gwww-redis-data:/data'
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+
+  minio:
+    image: minio/minio
+    restart: always
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - 'q08gwww-minio-data:/data'
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+    command: 'server --console-address ":9001" /data'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 20s
+    networks:
+      - teable-standalone
+      - q08gwww
+
+  teable-db-migrate:
+    image: 'ghcr.io/teableio/teable-db-migrate:latest'
+    restart: on-failure
+    environment:
+      - TZ=${TIMEZONE}
+      - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
+      - NEXTJS_DIR=${NEXTJS_DIR}
+    networks:
+      - teable-standalone
+      - q08gwww
     depends_on:
       teable-db:
         condition: service_healthy
 
+teable:
+    image: 'ghcr.io/teableio/teable:latest'
+    restart: always
+    ports:
+      - '3000:3000'
+      - '3001:3001'
+    volumes:
+      - 'q08gwww-teable-data:/app/.assets:rw'
+    env_file:
+      - .env
+    environment:
+      - TZ=${TIMEZONE}
+      - NEXT_ENV_IMAGES_ALL_REMOTE=true
+      - PORT=3000
+      - SOCKET_PORT=3001
+      - NEXTJS_DIR=${NEXTJS_DIR}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - BRAND_NAME=${BRAND_NAME:-Teable}
+      - API_DOC_ENABLED_SNIPPET=${API_DOC_ENABLED_SNIPPET:-true}
+      - I18NEXT_DEFAULT_CONFIG_PATH=${NEXTJS_DIR}/next-i18next.config.js
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - APP_CACHE_DSN=${APP_CACHE_DSN}
+      - NEXT_BUILD_ENV_OUTPUT=${NEXT_BUILD_ENV_OUTPUT:-classic}
+      - NEXT_BUILD_ENV_SOURCEMAPS=${NEXT_BUILD_ENV_SOURCEMAPS:-false}
+      - NEXT_BUILD_ENV_CSP=${NEXT_BUILD_ENV_CSP:-true}
+      - NEXT_BUILD_ENV_SENTRY_ENABLED=${NEXT_BUILD_ENV_SENTRY_ENABLED:-true}
+      - NEXT_BUILD_ENV_SENTRY_UPLOAD_DRY_RUN=${NEXT_BUILD_ENV_SENTRY_UPLOAD_DRY_RUN:-true}
+      - PUBLIC_ORIGIN=https://teable.se
+      - ASSET_PREFIX=https://teable.se
+    networks:
+      - teable-standalone
+      - q08gwww
+    depends_on:
+      redis:
+        condition: service_healthy
+      teable-db-migrate:
+        condition: service_completed_successfully
+
 networks:
   teable-standalone:
     name: teable-standalone-network
-    driver: bridge
+  q08gwww:
+    external: true
 
 volumes:
+  q08gwww-redis-data:
+    name: q08gwww-redis-data
+  q08gwww-minio-data:
+    name: q08gwww-minio-data
+  q08gwww-teable-data:
+    name: q08gwww-teable-data
   teable-data: {}
   teable-db: {}
