@@ -1,6 +1,52 @@
 version: '3.9'
 
 services:
+  traefik:
+    container_name: coolify-proxy
+    image: 'traefik:v2.11'
+    restart: unless-stopped
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    networks:
+      - teable-standalone
+      - q08gwww
+    ports:
+      - '80:80'
+      - '443:443'
+      - '8080:8080'
+    healthcheck:
+      test: 'wget -qO- http://localhost:80/ping || exit 1'
+      interval: 4s
+      timeout: 2s
+      retries: 5
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+      - '/data/coolify/proxy:/traefik'
+    command:
+      - '--ping=true'
+      - '--ping.entrypoint=http'
+      - '--api.dashboard=true'
+      - '--api.insecure=false'
+      - '--entrypoints.http.address=:80'
+      - '--entrypoints.https.address=:443'
+      - '--entrypoints.http.http.encodequerysemicolons=true'
+      - '--entryPoints.http.http2.maxConcurrentStreams=50'
+      - '--entrypoints.https.http.encodequerysemicolons=true'
+      - '--entryPoints.https.http2.maxConcurrentStreams=50'
+      - '--providers.docker.exposedbydefault=false'
+      - '--providers.file.directory=/traefik/dynamic/'
+      - '--providers.file.watch=true'
+      - '--certificatesresolvers.letsencrypt.acme.httpchallenge=true'
+      - '--certificatesresolvers.letsencrypt.acme.storage=/traefik/acme.json'
+      - '--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=http'
+      - '--providers.docker=true'
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.entrypoints=http
+      - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.services.traefik.loadbalancer.server.port=8080
+      - coolify.managed=true
+
   teable-db:
     image: 'postgres:15.4'
     restart: always
@@ -77,7 +123,7 @@ services:
       teable-db:
         condition: service_healthy
 
-teable:
+  teable:
     image: 'ghcr.io/teableio/teable:latest'
     restart: always
     ports:
@@ -117,6 +163,11 @@ teable:
         condition: service_healthy
       teable-db-migrate:
         condition: service_completed_successfully
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.teable.entrypoints=http
+      - traefik.http.routers.teable.rule=Host(`teable.se`)
+      - traefik.http.services.teable.loadbalancer.server.port=3000
 
 networks:
   teable-standalone:
