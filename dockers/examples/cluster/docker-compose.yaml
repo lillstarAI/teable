@@ -16,7 +16,7 @@ services:
       - NEXT_ENV_IMAGES_ALL_REMOTE=true
       - LOG_LEVEL=debug
     volumes:
-      - ./next-i18next.config.js:/app/next-i18next.config.js
+      - ${I18NEXT_DEFAULT_CONFIG_PATH}
     networks:
       - teable-cluster
     depends_on:
