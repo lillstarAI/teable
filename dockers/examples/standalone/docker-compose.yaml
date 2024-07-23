@@ -126,7 +126,7 @@ services:
   teable:
     build:
       context: https://github.com/lillstarAI/teable.git
-      dockerfile: /workspaces/teable/dockers/teable/Dockerfile
+      dockerfile: dockers/teable/Dockerfile
     restart: always
     ports:
       - '3000:3000'
