@@ -124,7 +124,9 @@ services:
         condition: service_healthy
 
   teable:
-    image: 'ghcr.io/teableio/teable:latest'
+    build:
+      context: https://github.com/lillstarAI/teable.git
+      dockerfile: /workspaces/teable/dockers/teable/Dockerfile
     restart: always
     ports:
       - '3000:3000'
@@ -168,6 +170,12 @@ services:
       - traefik.http.routers.teable.entrypoints=http
       - traefik.http.routers.teable.rule=Host(`teable.se`)
       - traefik.http.services.teable.loadbalancer.server.port=3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   teable-standalone:
