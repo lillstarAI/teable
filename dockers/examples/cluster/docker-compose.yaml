@@ -8,15 +8,16 @@ services:
     restart: always
     expose:
       - "3001"
+    env_file:
+      - .env
     environment:
       - TZ=${TIMEZONE}
       - NEXT_ENV_IMAGES_ALL_REMOTE=true
       - LOG_LEVEL=debug
-    env_file:
-      - .env
     volumes:
-      - ${I18NEXT_DEFAULT_CONFIG_PATH}:apps/nextjs-app/next-i18next.config.js
+      - ${I18NEXT_DEFAULT_CONFIG_PATH}
     networks:
+      - coolify
       - teable-cluster
     depends_on:
       teable-db-migrate:
@@ -29,6 +30,13 @@ services:
       interval: 5s
       timeout: 3s
       retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.teable.rule=Host(`teable.se`)"
+      - "traefik.http.routers.teable.entrypoints=http,https"
+      - "traefik.http.services.teable.loadbalancer.server.port=3001"
+      - "traefik.http.routers.teable.tls=true"
+      - "traefik.http.routers.teable.tls.certresolver=letsencrypt"
 
   teable-db:
     image: postgres:15.4
@@ -112,10 +120,8 @@ services:
   teable-gateway:
     image: openresty/openresty:1.25.3.1-2-bookworm-fat
     restart: unless-stopped
-    ports:
-      - '80:80'
-      - '443:443'
-      - '9000:9000'
+    expose:
+      - '80'
     volumes:
       - './gateway/conf.d:/etc/nginx/conf.d'
     networks:
@@ -128,8 +134,17 @@ services:
     depends_on:
       teable:
         condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.teable-gateway.rule=Host(`teable.se`) && PathPrefix(`/api`, `/socket`)"
+      - "traefik.http.routers.teable-gateway.entrypoints=http,https"
+      - "traefik.http.services.teable-gateway.loadbalancer.server.port=80"
+      - "traefik.http.routers.teable-gateway.tls=true"
+      - "traefik.http.routers.teable-gateway.tls.certresolver=letsencrypt"
 
 networks:
+  coolify:
+    external: true
   teable-cluster:
     name: teable-cluster-network
     driver: bridge
