@@ -56,7 +56,7 @@ describe('Share (socket-e2e) (e2e)', () => {
   const getQuery = (collection: string, shareId: string) => {
     return new Promise<Doc<any>[]>((resolve, reject) => {
       const connection = shareDbService.connect(undefined, {
-        url: `ws://localhost:3000/socket?shareId=${shareId}`,
+        url: `ws://teable.se:3001/socket?shareId=${shareId}`,
         headers: {},
       });
       connection.createFetchQuery(collection, {}, {}, (err, result) => {
