@@ -1,150 +1,133 @@
 version: '3.9'
 
 services:
-  teable:
-    image: ghcr.io/teableio/teable:latest
-    deploy:
-      replicas: 2
-    restart: always
-    expose:
-      - "3001"
-    env_file:
-      - .env
-    environment:
-      - TZ=${TIMEZONE}
-      - NEXT_ENV_IMAGES_ALL_REMOTE=true
-      - LOG_LEVEL=debug
-    volumes:
-      - ${I18NEXT_DEFAULT_CONFIG_PATH}
-    networks:
-      - coolify
-      - teable-cluster
-    depends_on:
-      teable-db-migrate:
-        condition: service_completed_successfully
-      teable-cache:
-        condition: service_healthy
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3001/health']
-      start_period: 5s
-      interval: 5s
-      timeout: 3s
-      retries: 3
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.teable.rule=Host(`teable.se`) && !PathPrefix(`/api`, `/socket`)"
-      - "traefik.http.services.teable.loadbalancer.server.port=3001"
-
   teable-db:
-    image: postgres:15.4
+    image: 'postgres:15.4'
     restart: always
     expose:
       - '5432'
     volumes:
-      - teable-db:/var/lib/postgresql/data:rw
+      - '/data/coolify/applications/q08gwww/docker/db/data:/var/lib/postgresql/data:rw'
     environment:
       - TZ=${TIMEZONE}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     networks:
-      - teable-cluster
+      - teable-standalone
+      - q08gwww
     healthcheck:
-      test: ['CMD-SHELL', "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
-      timeout: 3s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: 'redis:alpine'
+    restart: always
+    expose:
+      - '6379'
+    networks:
+      - teable-standalone
+      - q08gwww
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - 'q08gwww-redis-data:/data'
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+
+  minio:
+    image: minio/minio
+    restart: always
+    expose:
+      - '9000'
+      - '9001'
+    volumes:
+      - 'q08gwww-minio-data:/data'
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+    command: 'server --console-address ":9001" /data'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
       retries: 3
+      start_period: 20s
+    networks:
+      - teable-standalone
+      - q08gwww
 
   teable-db-migrate:
-    image: ghcr.io/teableio/teable-db-migrate:latest
+    image: 'ghcr.io/teableio/teable-db-migrate:latest'
+    restart: on-failure
     environment:
       - TZ=${TIMEZONE}
       - PRISMA_DATABASE_URL=${PRISMA_DATABASE_URL}
+      - NEXTJS_DIR=${NEXTJS_DIR}
     networks:
-      - teable-cluster
+      - teable-standalone
+      - q08gwww
     depends_on:
       teable-db:
         condition: service_healthy
 
-  teable-cache:
-    image: redis:7.2.4
+  teable:
+    image: 'ghcr.io/teableio/teable:latest'
     restart: always
     expose:
-      - '6379'
+      - '3000'
+      - '3001'
     volumes:
-      - teable-cache:/data:rw
-    networks:
-      - teable-cluster
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
-    healthcheck:
-      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
-      interval: 10s
-      timeout: 3s
-      retries: 3
-
-  teable-storage:
-    image: minio/minio:RELEASE.2024-02-17T01-15-57Z
-    expose:
-      - '9000'
-      - '9001'
+      - 'q08gwww-teable-data:/app/.assets:rw'
+    env_file:
+      - .env
     environment:
-      - MINIO_SERVER_URL=${MINIO_SERVER_URL}
-      - MINIO_BROWSER_REDIRECT_URL=${MINIO_BROWSER_REDIRECT_URL}
-      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
-      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
-    volumes:
-      - teable-storage:/data:rw
+      - TZ=${TIMEZONE}
+      - NEXT_ENV_IMAGES_ALL_REMOTE=${NEXT_ENV_IMAGES_ALL_REMOTE}
+      - PORT=@{PORT}
+      - SOCKET_PORT=${SOCKET_PORT}
+      - NEXTJS_DIR=${NEXTJS_DIR}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - BRAND_NAME=${BRAND_NAME}
+      - API_DOC_ENABLED_SNIPPET=${API_DOC_ENABLED_SNIPPET}
+      - I18NEXT_DEFAULT_CONFIG_PATH=${I18NEXT_DEFAULT_CONFIG_PATH}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - APP_CACHE_DSN=${APP_CACHE_DSN}
+      - NEXT_BUILD_ENV_OUTPUT=${NEXT_BUILD_ENV_OUTPUT}
+      - NEXT_BUILD_ENV_SOURCEMAPS=${NEXT_BUILD_ENV_SOURCEMAPS}
+      - NEXT_BUILD_ENV_CSP=${NEXT_BUILD_ENV_CSP}
+      - NEXT_BUILD_ENV_SENTRY_ENABLED=${NEXT_BUILD_ENV_SENTRY_ENABLED}
+      - NEXT_BUILD_ENV_SENTRY_UPLOAD_DRY_RUN=${NEXT_BUILD_ENV_SENTRY_UPLOAD_DRY_RUN}
+      - PUBLIC_ORIGIN=${PUBLIC_ORIGIN}
+      - ASSET_PREFIX=${ASSET_PREFIX}
     networks:
-      - teable-cluster
-    command: server /data --console-address ":9001"
-
-  createbuckets:
-    image: minio/mc
-    networks:
-      - teable-cluster
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set teable-storage http://teable-storage:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY};
-      /usr/bin/mc mb teable-storage/public;
-      /usr/bin/mc anonymous set public teable-storage/public;
-      /usr/bin/mc mb teable-storage/private;
-      exit 0;
-      "
+      - teable-standalone
+      - q08gwww
     depends_on:
-      teable-storage:
-        condition: service_started
-
-  teable-gateway:
-    image: openresty/openresty:1.25.3.1-2-bookworm-fat
-    restart: unless-stopped
-    expose:
-      - '80'
-    volumes:
-      - './gateway/conf.d:/etc/nginx/conf.d'
-    networks:
-      - coolify
-      - teable-cluster
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost/healthcheck']
-      interval: 10s
-      timeout: 3s
-      retries: 3
-    depends_on:
-      teable:
-        condition: service_started
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.teable-gateway.rule=Host(`teable.se`) && PathPrefix(`/api`, `/socket`)"
-      - "traefik.http.services.teable-gateway.loadbalancer.server.port=80"
+      redis:
+        condition: service_healthy
+      teable-db-migrate:
+        condition: service_completed_successfully
 
 networks:
-  coolify:
+  teable-standalone:
+    name: teable-standalone-network
+  q08gwww:
     external: true
-  teable-cluster:
-    name: teable-cluster-network
-    driver: bridge
 
 volumes:
-  teable-db: {}
-  teable-cache: {}
-  teable-storage: {}
+  q08gwww-redis-data:
+    name: q08gwww-redis-data
+  q08gwww-minio-data:
+    name: q08gwww-minio-data
+  q08gwww-teable-data:
+    name: q08gwww-teable-data
