@@ -6,13 +6,17 @@ services:
     deploy:
       replicas: 2
     restart: always
-    expose:
-      - '3000'
+    ports:
+      - "3000:3000"
+      - "8080:8080"  # För WebSocket
     env_file:
       - .env
     environment:
       - TZ=${TIMEZONE}
       - NEXT_ENV_IMAGES_ALL_REMOTE=true
+      - LOG_LEVEL=debug
+    volumes:
+      - ./next-i18next.config.js:/app/next-i18next.config.js
     networks:
       - teable-cluster
     depends_on:
@@ -127,7 +131,7 @@ services:
     networks:
       - teable-cluster
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://${LOCALHOST}/healthcheck']
+      test: ['CMD', 'curl', '-f', 'http://localhost/healthcheck']
       interval: 10s
       timeout: 3s
       retries: 3
