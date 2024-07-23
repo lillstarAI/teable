@@ -15,7 +15,7 @@ services:
       - '443:443'
       - '8080:8080'
     healthcheck:
-      test: 'wget -qO- http://localhost:80/ping || exit 1'
+      test: 'wget -qO- http://${LOCALHOST}:80/ping || exit 1'
       interval: 4s
       timeout: 2s
       retries: 5
@@ -100,7 +100,7 @@ services:
       - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
     command: 'server --console-address ":9001" /data'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://${PUBLIC_ORIGIN}:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3

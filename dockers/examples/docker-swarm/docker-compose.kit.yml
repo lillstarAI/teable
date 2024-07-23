@@ -27,7 +27,7 @@ services:
         condition: on-failure
     environment:
       - TZ=${TIMEZONE}
-      - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
+      - PRISMA_DATABASE_URL=${PRISMA_DATABASE_URL}
     networks:
       - teable-swarm
 
