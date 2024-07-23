@@ -32,11 +32,8 @@ services:
       retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.teable.rule=Host(`teable.se`)"
-      - "traefik.http.routers.teable.entrypoints=http,https"
+      - "traefik.http.routers.teable.rule=Host(`teable.se`) && !PathPrefix(`/api`, `/socket`)"
       - "traefik.http.services.teable.loadbalancer.server.port=3001"
-      - "traefik.http.routers.teable.tls=true"
-      - "traefik.http.routers.teable.tls.certresolver=letsencrypt"
 
   teable-db:
     image: postgres:15.4
@@ -125,6 +122,7 @@ services:
     volumes:
       - './gateway/conf.d:/etc/nginx/conf.d'
     networks:
+      - coolify
       - teable-cluster
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost/healthcheck']
@@ -137,10 +135,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.teable-gateway.rule=Host(`teable.se`) && PathPrefix(`/api`, `/socket`)"
-      - "traefik.http.routers.teable-gateway.entrypoints=http,https"
       - "traefik.http.services.teable-gateway.loadbalancer.server.port=80"
-      - "traefik.http.routers.teable-gateway.tls=true"
-      - "traefik.http.routers.teable-gateway.tls.certresolver=letsencrypt"
 
 networks:
   coolify:
