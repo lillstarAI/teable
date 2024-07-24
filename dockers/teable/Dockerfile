@@ -52,6 +52,8 @@ COPY --from=deps --link /workspace-install ./
 # Copy the .env file
 COPY --link apps/nextjs-app/.env ./apps/nextjs-app/.env
 
+RUN echo "DATABASE_URL is: ${DATABASE_URL}"
+
 RUN set -ex; \
     echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
     echo "DATABASE_URL=\"${DATABASE_URL}\"" >> apps/nextjs-app/.env; \
