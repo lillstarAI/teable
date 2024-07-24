@@ -34,19 +34,6 @@ const NEXT_ENV_IMAGES_ALL_REMOTE = trueEnv.includes(
   process.env?.NEXT_ENV_IMAGES_ALL_REMOTE ?? 'true'
 );
 
-const NEXT_BUILD_ENV_SENTRY_ENABLED = trueEnv.includes(
-  process.env?.NEXT_BUILD_ENV_SENTRY_ENABLED ?? 'false'
-);
-const NEXT_BUILD_ENV_SENTRY_UPLOAD_DRY_RUN = trueEnv.includes(
-  process.env?.NEXT_BUILD_ENV_SENTRY_UPLOAD_DRY_RUN ?? 'false'
-);
-const NEXT_BUILD_ENV_SENTRY_DEBUG = trueEnv.includes(
-  process.env?.NEXT_BUILD_ENV_SENTRY_DEBUG ?? 'false'
-);
-const NEXT_BUILD_ENV_SENTRY_TRACING = trueEnv.includes(
-  process.env?.NEXT_BUILD_ENV_SENTRY_TRACING ?? 'false'
-);
-
 const NEXTJS_SOCKET_PORT = process.env.SOCKET_PORT || '3001';
 
 if (!NEXT_BUILD_ENV_SOURCEMAPS) {
@@ -84,7 +71,6 @@ const secureHeaders = createSecureHeaders({
           frameSrc: ["'self'"],
           connectSrc: [
             "'self'",
-            'https://*.sentry.io',
             'https://*.teable.io',
             'https://*.teable.cn',
             'https://*.clarity.ms',
@@ -128,14 +114,6 @@ const nextConfig = {
 
   compiler: {
     // emotion: true,
-  },
-
-  sentry: {
-    hideSourceMaps: true,
-    // To disable the automatic instrumentation of API route handlers and server-side data fetching functions
-    // In other words, disable if you prefer to explicitly handle sentry per api routes (ie: wrapApiHandlerWithSentry)
-    // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/#configure-server-side-auto-instrumentation
-    autoInstrumentServerFunctions: false,
   },
 
   // @link https://nextjs.org/docs/basic-features/image-optimization
@@ -233,14 +211,6 @@ const nextConfig = {
       config.resolve.fallback = { ...config.resolve.fallback, fs: false };
     }
 
-    // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/tree-shaking/
-    config.plugins.push(
-      new webpack.DefinePlugin({
-        __SENTRY_DEBUG__: NEXT_BUILD_ENV_SENTRY_DEBUG,
-        __SENTRY_TRACING__: NEXT_BUILD_ENV_SENTRY_TRACING,
-      })
-    );
-
     // Grab the existing rule that handles SVG imports
     const fileLoaderRule = config.module.rules.find(
       (/** @type {{ test: { test: (arg0: string) => any; }; }} */ rule) => rule.test?.test?.('.svg')
@@ -275,32 +245,6 @@ const nextConfig = {
 };
 
 let config = nextConfig;
-
-if (NEXT_BUILD_ENV_SENTRY_ENABLED === true) {
-  try {
-    // https://docs.sentry.io/platforms/javascript/guides/nextjs/
-    const { withSentryConfig } = require('@sentry/nextjs');
-    // @ts-ignore because sentry does not match nextjs current definitions
-    config = withSentryConfig(config, {
-      // Additional config options for the Sentry Webpack plugin. Keep in mind that
-      // the following options are set automatically, and overriding them is not
-      // recommended:
-      //   release, url, org, project, authToken, configFile, stripPrefix,
-      //   urlPrefix, include, ignore
-      // For all available options, see:
-      // https://github.com/getsentry/sentry-webpack-plugin#options.
-      // silent: isProd, // Suppresses all logs
-      dryRun: NEXT_BUILD_ENV_SENTRY_UPLOAD_DRY_RUN === true,
-      silent: NEXT_BUILD_ENV_SENTRY_DEBUG === false,
-    });
-    console.log(`- ${pc.green('info')} Sentry enabled for this build`);
-  } catch {
-    console.log(`- ${pc.red('error')} Could not enable sentry, import failed`);
-  }
-} else {
-  const { sentry, ...rest } = config;
-  config = rest;
-}
 
 if (tmModules.length > 0) {
   console.info(`${pc.green('notice')}- Will transpile [${tmModules.join(',')}]`);
