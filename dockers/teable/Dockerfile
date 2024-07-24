@@ -14,7 +14,7 @@ RUN corepack enable && pnpm add npm-run-all2 zx -g
 # Disabling some well-known postinstall scripts
 ENV HUSKY=0
 
-WORKDIR /workspace-install
+WORKDIR /app
 
 COPY --link package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 
