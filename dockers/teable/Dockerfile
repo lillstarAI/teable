@@ -55,11 +55,7 @@ COPY --link apps/nextjs-app/.env ./apps/nextjs-app/.env
 RUN set -ex; \
     echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
     echo "DATABASE_URL=\"${DATABASE_URL}\"" >> apps/nextjs-app/.env; \
-    if [ -n "$INTEGRATION_TEST" ]; then \
-        pnpm build:icons && pnpm build:other-packages; \
-    else \
-        NODE_OPTIONS=--max-old-space-size=8192 pnpm g:build; \
-    fi
+    NODE_OPTIONS=--max-old-space-size=8192 pnpm build:icons && pnpm build:other-packages
 
 
 ##################################################################
