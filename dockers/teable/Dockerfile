@@ -55,7 +55,7 @@ COPY --link apps/nextjs-app/.env ./apps/nextjs-app/.env
 RUN set -ex; \
     echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
     echo "DATABASE_URL=\"${DATABASE_URL}\"" >> apps/nextjs-app/.env; \
-    NODE_OPTIONS=--max-old-space-size=8192 pnpm build:icons && pnpm build:other-packages
+    pnpm g:build && pnpm build:icons && pnpm build:other-packages
 
 
 ##################################################################
