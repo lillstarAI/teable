@@ -3,7 +3,7 @@ import { systemConfig } from '@/features/i18n/system.config';
 import { PaymentRequiredPage } from '@/features/system/pages';
 import { useEffect } from 'react';
 import { getServerSideTranslations } from '@/lib/i18n';
-import type { GetServerSidePropsContext } from 'next';
+import type { GetServerSideProps, GetServerSidePropsContext } from 'next';
 
 export default function Custom404() {
   const { i18n, t } = useTranslation(systemConfig.i18nNamespaces);
@@ -13,7 +13,6 @@ export default function Custom404() {
       if (typeof window !== 'undefined') {
         const { getClientSideTranslations } = await import('@/lib/i18n');
         await getClientSideTranslations(i18n.language, systemConfig.i18nNamespaces);
-        // Här behöver vi inte sätta översättningarna manuellt eftersom next-i18next kommer att hantera det
       }
     };
     loadTranslations();
@@ -22,4 +21,13 @@ export default function Custom404() {
   return <PaymentRequiredPage />;
 }
 
-export { getServerSideProps };
+export const getServerSideProps: GetServerSideProps = async (
+  context: GetServerSidePropsContext
+) => {
+  const { locale } = context;
+  return {
+    props: {
+      ...(await getServerSideTranslations(locale, systemConfig.i18nNamespaces)),
+    },
+  };
+};
