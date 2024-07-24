@@ -1,6 +1,5 @@
-import type { GetStaticPropsContext } from 'next';
+import type { GetStaticPropsContext, InferGetStaticPropsType } from 'next';
 import { systemConfig } from '@/features/i18n/system.config';
-import { PaymentRequiredPage } from '@/features/system/pages';
 import { getServerSideTranslations } from '@/lib/i18n';
 
 export const getStaticProps = async (context: GetStaticPropsContext) => {
@@ -16,6 +15,11 @@ export const getStaticProps = async (context: GetStaticPropsContext) => {
   };
 };
 
-export default function Custom402() {
-  return <PaymentRequiredPage />;
+export default function Home(_props: InferGetStaticPropsType<typeof getStaticProps>) {
+  return (
+    <div>
+      <h1>Welcome to the Home Page</h1>
+      {/* Add your content here */}
+    </div>
+  );
 }
