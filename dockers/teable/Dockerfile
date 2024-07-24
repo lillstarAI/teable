@@ -48,6 +48,9 @@ WORKDIR /app
 
 COPY --from=deps --link /workspace-install ./
 
+# Copy the .env file
+COPY --link apps/nextjs-app/.env ./apps/nextjs-app/.env
+
 RUN set -ex; \
     echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
     if [ -n "$INTEGRATION_TEST" ]; then \
