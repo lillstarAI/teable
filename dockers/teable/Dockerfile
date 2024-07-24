@@ -42,7 +42,8 @@ ENV NODE_ENV=production \
     NEXT_BUILD_ENV_TYPECHECK=false \
     NEXT_BUILD_ENV_LINT=false \
     NEXT_BUILD_ENV_SENTRY_ENABLED=${SENTRY_ENABLED} \
-    NEXT_BUILD_ENV_SENTRY_TRACING=${SENTRY_TRACING}
+    NEXT_BUILD_ENV_SENTRY_TRACING=${SENTRY_TRACING} \
+    DATABASE_URL=${DATABASE_URL}
 
 WORKDIR /app
 
@@ -53,6 +54,7 @@ COPY --link apps/nextjs-app/.env ./apps/nextjs-app/.env
 
 RUN set -ex; \
     echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
+    echo "DATABASE_URL=\"${DATABASE_URL}\"" >> apps/nextjs-app/.env; \
     if [ -n "$INTEGRATION_TEST" ]; then \
         pnpm build:icons && pnpm build:other-packages; \
     else \
