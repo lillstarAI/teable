@@ -22,6 +22,7 @@
     "!apps/electron"
   ],
   "scripts": {
+    "build": "if [ \"$NEXT_BUILD_ENV_LINT\" = \"false\" ]; then tsc --project tsconfig.json; else tsc --project tsconfig.json && eslint .; fi",
     "clean:global-cache": "rimraf ./.cache",
     "deps:check": "pnpm --package=npm-check-updates@latest dlx npm-check-updates --configFileName ncurc.yml --workspaces --root --mergeConfig",
     "deps:update": "pnpm --package=npm-check-updates@latest dlx npm-check-updates --configFileName ncurc.yml -u --workspaces --root --mergeConfig",
