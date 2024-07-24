@@ -15,7 +15,7 @@
       "@/lib/*": ["src/lib/*"],
       "@/components/*": ["src/components/*"],
       "@/backend/*": ["./backend/*"],
-      "@/features/*": ["src/features/*"]
+      "@/features/*": ["src/features/*"],
       "@/pages/*": ["./pages/*"],
       "@/public/*": ["../public/*"],
       "@/themes/*": ["./themes/*"],
