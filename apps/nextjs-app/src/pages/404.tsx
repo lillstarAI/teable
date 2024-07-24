@@ -1,20 +1,27 @@
-import type { GetStaticPropsContext, InferGetStaticPropsType } from 'next';
+import { useTranslation } from 'next-i18next';
 import { systemConfig } from '@/features/i18n/system.config';
 import { NotFoundPage } from '@/features/system/pages';
+import { useEffect, useState } from 'react';
 import { getServerSideTranslations } from '@/lib/i18n';
 
-export const getServerSideProps = async (context: GetServerSidePropsContext) => {
-  const { locale = 'en' } = context;
+export default function Custom404() {
+  const [translations, setTranslations] = useState({});
+  const { i18n } = useTranslation();
 
-  const inlinedTranslation = await getServerSideTranslations(locale, systemConfig.i18nNamespaces);
+  useEffect(() => {
+    const loadTranslations = async () => {
+      const locale = i18n.language || 'en';
+      const inlinedTranslation = await getServerSideTranslations(locale, systemConfig.i18nNamespaces);
+      setTranslations(inlinedTranslation);
+    };
 
-  return {
-    props: {
-      locale: locale,
-      ...inlinedTranslation,
-    },
-  };
-};
-export default function Custom404(_props: InferGetStaticPropsType<typeof getStaticProps>) {
-  return <NotFoundPage />;
+    loadTranslations();
+  }, [i18n.language]);
+
+  return <NotFoundPage {...translations} />;
 }
+
+// This is needed to tell Next.js that this page should be statically generated
+export const getStaticProps = async () => {
+  return { props: {} };
+};
