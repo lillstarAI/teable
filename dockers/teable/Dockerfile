@@ -53,8 +53,8 @@ COPY --from=deps --link /workspace-install ./
 COPY --link apps/nextjs-app/.env ./apps/nextjs-app/.env
 
 RUN set -ex; \
-    "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
-    "DATABASE_URL=\"${DATABASE_URL}\"" >> apps/nextjs-app/.env; \
+    echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
+    echo "DATABASE_URL=\"${DATABASE_URL}\"" >> apps/nextjs-app/.env; \
     if [ -n "$INTEGRATION_TEST" ]; then \
         pnpm build:icons && pnpm build:other-packages; \
     else \
