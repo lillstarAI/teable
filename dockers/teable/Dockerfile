@@ -1,37 +1,25 @@
 ARG NODE_VERSION=20.9.0
-ARG BUILD_VERSION="1.0.0-alpha"
+ARG BUILD_VERSION="1.0.0-beta"
 
-###################################################################
-# Stage 1: Install all workspaces (dev)dependencies               #
-#          and generates node_modules folder(s)                   #
-###################################################################
-
+# Stage 1: Install dependencies
 FROM node:${NODE_VERSION}-bookworm AS deps
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable && pnpm add npm-run-all2 zx -g
 
-# Disabling some well-known postinstall scripts
 ENV HUSKY=0
 
 WORKDIR /app
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-
 RUN pnpm fetch
-
 COPY . .
-
 RUN pnpm install --prefer-offline --frozen-lockfile
 RUN pnpm -F @teable/db-main-prisma prisma-generate --schema ./prisma/postgres/schema.prisma
 
-###################################################################
-# Stage 2: Build the app                                          #
-###################################################################
-
+# Stage 2: Build the app
 FROM deps AS builder
 
-ARG INTEGRATION_TEST
 ARG BUILD_VERSION
 ARG ENABLE_CSP=true
 ARG SENTRY_ENABLED=true
@@ -42,26 +30,18 @@ ENV NODE_ENV=production \
     NEXT_BUILD_ENV_TYPECHECK=false \
     NEXT_BUILD_ENV_LINT=false \
     NEXT_BUILD_ENV_SENTRY_ENABLED=${SENTRY_ENABLED} \
-    NEXT_BUILD_ENV_SENTRY_TRACING=${SENTRY_TRACING} \
-    DATABASE_URL=${DATABASE_URL}
+    NEXT_BUILD_ENV_SENTRY_TRACING=${SENTRY_TRACING}
 
 WORKDIR /app
 
-COPY --from=deps --link /app ./
-
-# Copy the .env file
-COPY --link apps/nextjs-app/.env ./apps/nextjs-app/.env
+COPY --from=deps /app ./
+COPY apps/nextjs-app/.env ./apps/nextjs-app/.env
 
 RUN set -ex; \
     echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
-    echo "DATABASE_URL=\"${DATABASE_URL}\"" >> apps/nextjs-app/.env; \
     pnpm g:build && pnpm build:icons && pnpm build:other-packages
 
-
-##################################################################
-# Stage 3: Post Builder                                          #
-##################################################################
-
+# Stage 3: Post Builder
 FROM builder as post-builder
 
 ENV NODE_ENV=production
@@ -69,75 +49,36 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 RUN set -ex; \
-        rm -fr node_modules; \
-        pnpm nuke:node_modules; \
-        chmod +x ./scripts/post-build-cleanup.mjs; \
-        zx ./scripts/post-build-cleanup.mjs; \
-        pnpm install --prod --prefer-offline --frozen-lockfile; \
-        pnpm -F @teable/db-main-prisma prisma-generate --schema ./prisma/postgres/schema.prisma
+    rm -fr node_modules; \
+    pnpm nuke:node_modules; \
+    chmod +x ./scripts/post-build-cleanup.mjs; \
+    zx ./scripts/post-build-cleanup.mjs; \
+    pnpm install --prod --prefer-offline --frozen-lockfile; \
+    pnpm -F @teable/db-main-prisma prisma-generate --schema ./prisma/postgres/schema.prisma
 
-
-##################################################################
-# Stage 4: Extract a minimal image from the build                #
-##################################################################
-
+# Stage 4: Final image
 FROM node:${NODE_VERSION}-bookworm-slim AS runner
+
+ARG TZ
+ARG NODE_ENV
+ARG PORT
+ARG BRAND_NAME
+ARG NEXTJS_DIR
 
 ENV TZ=${TZ} \
     NODE_ENV=${NODE_ENV} \
-    PORT=${PORT}\
-    BRAND_NAME=${BRAND_NAME}\
+    PORT=${PORT} \
+    BRAND_NAME=${BRAND_NAME} \
     NEXTJS_DIR=${NEXTJS_DIR}
 
-RUN set -ex; \
-        npm install zx -g; \
-        apt-get update; \
-        apt-get install -y --no-install-recommends \
-                curl \
-                openssl \
-    	; \
-    	rm -rf /var/lib/apt/lists/*
-
-# install gosu for a better su+exec command
-# https://github.com/tianon/gosu/blob/master/INSTALL.md
-ENV GOSU_VERSION 1.17
-RUN set -eux; \
-# save list of currently installed packages for later so we can clean up
-        savedAptMark="$(apt-mark showmanual)"; \
-        apt-get update; \
-        apt-get install -y --no-install-recommends ca-certificates gnupg wget; \
-        rm -rf /var/lib/apt/lists/*; \
-        \
-        dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
-        wget -nv -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch"; \
-        wget -nv -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch.asc"; \
-        \
-# verify the signature
-        export GNUPGHOME="$(mktemp -d)"; \
-        gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4; \
-        gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu; \
-        gpgconf --kill all; \
-        rm -rf "$GNUPGHOME" /usr/local/bin/gosu.asc; \
-        \
-# clean up fetch dependencies
-        apt-mark auto '.*' > /dev/null; \
-        [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
-        apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
-        \
-        chmod +x /usr/local/bin/gosu; \
-# verify that the binary works
-        gosu --version; \
-        gosu nobody true
+RUN apt-get update && apt-get install -y curl openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-RUN set -ex; \
-        addgroup --system --gid 1001 nodejs; \
-        adduser --system --uid 1001 nodejs; \
-# Set the correct permission for local cache
-        mkdir .assets; \
-        mkdir .temporary; \
-        chown -R nodejs:nodejs /app
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nodejs && \
+    mkdir .assets .temporary && \
+    chown -R nodejs:nodejs /app
 
 COPY --from=post-builder --chown=nodejs:nodejs /app/apps/nextjs-app/next.config.js \
                     /app/apps/nextjs-app/next-i18next.config.js \
@@ -160,5 +101,10 @@ COPY --from=post-builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=post-builder --chown=nodejs:nodejs /app/package.json ./package.json
 
 EXPOSE ${PORT}
+
+USER nodejs
+
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:${PORT}/health || exit 1
 
 ENTRYPOINT ["node", "apps/nestjs-backend/dist/index.js"]
