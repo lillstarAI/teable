@@ -1,10 +1,10 @@
 import { useTranslation } from 'next-i18next';
 import { systemConfig } from '@/features/i18n/system.config';
-import { ForbiddenPage } from '@/features/system/pages';
+import { PaymentRequiredPage } from '@/features/system/pages'; // or ForbiddenPage or NotFoundPage
 import { useEffect, useState } from 'react';
-import { getClientSideTranslations } from '@/lib/i18n'; // You'll need to create this function if you haven't already
+import { getClientSideTranslations } from '@/lib/i18n';
 
-export default function Custom403() {
+export default function Custom403() { // or Custom402 or Custom404
   const { i18n } = useTranslation(systemConfig.i18nNamespaces);
   const [translations, setTranslations] = useState({});
 
@@ -16,5 +16,5 @@ export default function Custom403() {
     loadTranslations();
   }, [i18n.language]);
 
-  return <ForbiddenPage {...translations} />;
+  return <PaymentRequiredPage {...translations} />; // or ForbiddenPage or NotFoundPage
 }
