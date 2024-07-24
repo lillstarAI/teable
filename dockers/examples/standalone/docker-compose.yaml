@@ -7,7 +7,7 @@ services:
     expose:
       - '5432'
     volumes:
-      - '/data/coolify/applications/g00gcs4/docker/db/data:/var/lib/postgresql/data:rw'
+      - postgres_data:/var/lib/postgresql/data
     environment:
       - TZ=${TIMEZONE}
       - POSTGRES_DB=${POSTGRES_DB}
@@ -26,7 +26,7 @@ services:
     image: 'redis:alpine'
     restart: always
     expose:
-      - '6380/4'
+      - '6379'
     networks:
       - teable-standalone
     healthcheck:
@@ -36,7 +36,7 @@ services:
       retries: 5
       start_period: 10s
     volumes:
-      - 'g00gcs4-redis-data:/data'
+      - redis_data:/data
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
 
   minio:
@@ -46,7 +46,7 @@ services:
       - '9000'
       - '9001'
     volumes:
-      - 'g00gcs4-minio-data:/data'
+      - minio_data:/data
     environment:
       - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
       - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
@@ -80,7 +80,7 @@ services:
       - '3000'
       - '3001'
     volumes:
-      - 'g00gcs4-teable-data:/app/.assets:rw'
+      - teable_data:/app/.assets
     env_file:
       - .env
     environment:
@@ -90,7 +90,7 @@ services:
       - SOCKET_PORT=${SOCKET_PORT}
       - NEXTJS_DIR=${NEXTJS_DIR}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6380/4
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
       - BRAND_NAME=${BRAND_NAME}
       - API_DOC_ENABLED_SNIPPET=${API_DOC_ENABLED_SNIPPET}
       - I18NEXT_DEFAULT_CONFIG_PATH=${I18NEXT_DEFAULT_CONFIG_PATH}
@@ -118,9 +118,7 @@ networks:
     name: teable-standalone-network
 
 volumes:
-  g00gcs4-redis-data:
-    name: g00gcs4-redis-data
-  g00gcs4-minio-data:
-    name: g00gcs4-minio-data
-  g00gcs4-teable-data:
-    name: g00gcs4-teable-data
+  postgres_data:
+  redis_data:
+  minio_data:
+  teable_data:
