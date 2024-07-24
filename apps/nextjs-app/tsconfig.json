@@ -12,10 +12,10 @@
     "paths": {
       "@/test-utils": ["../config/tests/test-utils"],
       "@/config/*": ["./config/*"],
-      "@/lib/*": ["./lib/*"],
-      "@/components/*": ["./components/*"],
+      "@/lib/*": ["src/lib/*"],
+      "@/components/*": ["src/components/*"],
       "@/backend/*": ["./backend/*"],
-      "@/features/*": ["./features/*"],
+      "@/features/*": ["src/features/*"]
       "@/pages/*": ["./pages/*"],
       "@/public/*": ["../public/*"],
       "@/themes/*": ["./themes/*"],
