@@ -22,6 +22,12 @@ export default function Custom402() {
 }
 
 // This is needed to tell Next.js that this page should be statically generated
-export const getStaticProps = async () => {
-  return { props: {} };
+export const getStaticProps: GetStaticProps = async ({ locale = 'en' }) => {
+  const inlinedTranslation = await getServerSideTranslations(locale, systemConfig.i18nNamespaces);
+  return {
+    props: {
+      locale: locale,
+      ...inlinedTranslation,
+    },
+  };
 };
