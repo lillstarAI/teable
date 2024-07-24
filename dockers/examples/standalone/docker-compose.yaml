@@ -26,7 +26,7 @@ services:
     image: 'redis:alpine'
     restart: always
     expose:
-      - '6379'
+      - '6380'
     networks:
       - teable-standalone
     healthcheck:
@@ -90,7 +90,7 @@ services:
       - SOCKET_PORT=${SOCKET_PORT}
       - NEXTJS_DIR=${NEXTJS_DIR}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6380
       - BRAND_NAME=${BRAND_NAME}
       - API_DOC_ENABLED_SNIPPET=${API_DOC_ENABLED_SNIPPET}
       - I18NEXT_DEFAULT_CONFIG_PATH=${I18NEXT_DEFAULT_CONFIG_PATH}
