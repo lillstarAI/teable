@@ -54,8 +54,8 @@ services:
     environment:
       - MINIO_SERVER_URL=${MINIO_SERVER_URL}
       - MINIO_BROWSER_REDIRECT_URL=${MINIO_BROWSER_REDIRECT_URL}
-      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
-      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
     volumes:
       - teable-storage:/data:rw
     networks:
