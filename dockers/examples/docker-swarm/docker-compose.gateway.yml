@@ -17,7 +17,7 @@ services:
     networks:
       - teable-swarm
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://${LOCALHOST}/healthcheck']
+      test: ['CMD', 'curl', '-f', '${MINIO_SERVER_URL}/healthcheck']
       interval: 10s
       timeout: 3s
       retries: 3
