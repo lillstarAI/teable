@@ -16,7 +16,7 @@ ENV HUSKY=0
 
 WORKDIR /app
 
-COPY --link package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY --from=deps --link /app ./
 
 RUN pnpm fetch
 
