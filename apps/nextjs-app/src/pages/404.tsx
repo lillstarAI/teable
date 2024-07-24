@@ -1,21 +1,20 @@
-import type { GetStaticPropsContext, InferGetStaticPropsType } from 'next';
+import { useTranslation } from 'next-i18next';
 import { systemConfig } from '@/features/i18n/system.config';
-import { NotFoundPage } from '@/features/system/pages';
-import { getServerSideTranslations } from '@/lib/i18n';
+import { PaymentRequiredPage } from '@/features/system/pages'; // or ForbiddenPage or NotFoundPage
+import { useEffect, useState } from 'react';
+import { getClientSideTranslations } from '@/lib/i18n';
 
-export const getStaticProps = async (context: GetStaticPropsContext) => {
-  const { locale = 'en' } = context;
+export default function Custom404() { // or Custom402 or Custom403
+  const { i18n } = useTranslation(systemConfig.i18nNamespaces);
+  const [translations, setTranslations] = useState({});
 
-  const inlinedTranslation = await getServerSideTranslations(locale, systemConfig.i18nNamespaces);
+  useEffect(() => {
+    const loadTranslations = async () => {
+      const clientTranslations = await getClientSideTranslations(i18n.language, systemConfig.i18nNamespaces);
+      setTranslations(clientTranslations);
+    };
+    loadTranslations();
+  }, [i18n.language]);
 
-  return {
-    props: {
-      locale: locale,
-      ...inlinedTranslation,
-    },
-  };
-};
-
-export default function Custom404(_props: InferGetStaticPropsType<typeof getStaticProps>) {
-  return <NotFoundPage />;
+  return <PaymentRequiredPage {...translations} />; // or ForbiddenPage or NotFoundPage
 }
