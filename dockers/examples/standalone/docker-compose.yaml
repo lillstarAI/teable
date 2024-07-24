@@ -1,34 +1,13 @@
 version: '3.9'
 
 services:
-  teable:
-    image: ghcr.io/lillstarai/teable:latest
-    restart: always
-    ports:
-      - '3000:3000'
-    volumes:
-      - teable-data:/app/.assets:rw
-      # you may use a bind-mounted host directory instead,
-      # so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/teable/data:/app/.assets:rw
-    env_file:
-      - .env
-    environment:
-      - TZ=${TIMEZONE}
-      - NEXT_ENV_IMAGES_ALL_REMOTE=true
-    networks:
-      - teable-standalone
-    depends_on:
-      teable-db-migrate:
-        condition: service_completed_successfully
-
   teable-db:
-    image: postgres:15.4
+    image: 'postgres:15.4'
     restart: always
-    ports:
-      - '42345:5432'
+    expose:
+      - '5432'
     volumes:
-      - ./docker/db/data:/var/lib/postgresql/data:rw
+      - '/data/coolify/applications/g00gcs4/docker/db/data:/var/lib/postgresql/data:rw'
     environment:
       - TZ=${TIMEZONE}
       - POSTGRES_DB=${POSTGRES_DB}
@@ -37,27 +16,111 @@ services:
     networks:
       - teable-standalone
     healthcheck:
-      test: ['CMD-SHELL', "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
-      timeout: 3s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: 'redis:alpine'
+    restart: always
+    expose:
+      - '6380/4'
+    networks:
+      - teable-standalone
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - 'g00gcs4-redis-data:/data'
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+
+  minio:
+    image: minio/minio
+    restart: always
+    expose:
+      - '9000'
+      - '9001'
+    volumes:
+      - 'g00gcs4-minio-data:/data'
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+    command: 'server --console-address ":9001" /data'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "https://minio-server.teable.se:9001/minio/health/live"]
+      interval: 30s
+      timeout: 20s
       retries: 3
+      start_period: 20s
+    networks:
+      - teable-standalone
 
   teable-db-migrate:
-    image: ghcr.io/lillstarai/teable-db-migrate:latest
+    image: 'ghcr.io/teableio/teable-db-migrate:latest'
+    restart: on-failure
     environment:
       - TZ=${TIMEZONE}
       - PRISMA_DATABASE_URL=${PRISMA_DATABASE_URL}
+      - NEXTJS_DIR=${NEXTJS_DIR}
     networks:
       - teable-standalone
     depends_on:
       teable-db:
         condition: service_healthy
 
+  teable:
+    image: 'ghcr.io/teableio/teable:latest'
+    restart: always
+    expose:
+      - '3000'
+      - '3001'
+    volumes:
+      - 'g00gcs4-teable-data:/app/.assets:rw'
+    env_file:
+      - .env
+    environment:
+      - TZ=${TIMEZONE}
+      - NEXT_ENV_IMAGES_ALL_REMOTE=${NEXT_ENV_IMAGES_ALL_REMOTE}
+      - PORT=${PORT}
+      - SOCKET_PORT=${SOCKET_PORT}
+      - NEXTJS_DIR=${NEXTJS_DIR}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6380/4
+      - BRAND_NAME=${BRAND_NAME}
+      - API_DOC_ENABLED_SNIPPET=${API_DOC_ENABLED_SNIPPET}
+      - I18NEXT_DEFAULT_CONFIG_PATH=${I18NEXT_DEFAULT_CONFIG_PATH}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - APP_CACHE_DSN=${APP_CACHE_DSN}
+      - NEXT_BUILD_ENV_OUTPUT=${NEXT_BUILD_ENV_OUTPUT}
+      - NEXT_BUILD_ENV_SOURCEMAPS=${NEXT_BUILD_ENV_SOURCEMAPS}
+      - NEXT_BUILD_ENV_CSP=${NEXT_BUILD_ENV_CSP}
+      - NEXT_BUILD_ENV_SENTRY_ENABLED=${NEXT_BUILD_ENV_SENTRY_ENABLED}
+      - NEXT_BUILD_ENV_SENTRY_UPLOAD_DRY_RUN=${NEXT_BUILD_ENV_SENTRY_UPLOAD_DRY_RUN}
+      - PUBLIC_ORIGIN=${PUBLIC_ORIGIN}
+      - ASSET_PREFIX=${ASSET_PREFIX}
+    networks:
+      - teable-standalone
+    depends_on:
+      redis:
+        condition: service_healthy
+      teable-db-migrate:
+        condition: service_completed_successfully
+
 networks:
   teable-standalone:
     name: teable-standalone-network
-    driver: bridge
 
 volumes:
-  teable-data: {}
-  teable-db: {}
+  g00gcs4-redis-data:
+    name: g00gcs4-redis-data
+  g00gcs4-minio-data:
+    name: g00gcs4-minio-data
+  g00gcs4-teable-data:
+    name: g00gcs4-teable-data
