@@ -34,7 +34,7 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 
-COPY --from=deps /app ./
+COPY .env ./
 COPY apps/nextjs-app/.env ./apps/nextjs-app/.env
 
 RUN set -ex; \
