@@ -12,5 +12,31 @@ export const getServerSideTranslations = async (
   configOverride?: UserConfig | null,
   extraLocales?: string[] | false
 ): Promise<SSRConfig> => {
-  return serverSideTranslations(locale, namespacesRequired, configOverride, extraLocales);
+  try {
+    // Ensure locale is a string
+    const safeLocale = typeof locale === 'string' ? locale : 'en';
+
+    // Ensure namespacesRequired is an array
+    const safeNamespaces = Array.isArray(namespacesRequired) 
+      ? namespacesRequired 
+      : typeof namespacesRequired === 'string' 
+        ? [namespacesRequired] 
+        : [];
+
+    const translations = await serverSideTranslations(
+      safeLocale, 
+      safeNamespaces as string[], 
+      configOverride, 
+      extraLocales
+    );
+
+    return translations;
+  } catch (error) {
+    console.error('Error in getServerSideTranslations:', error);
+    // Return an empty config if there's an error
+    return { _nextI18Next: { initialI18nStore: {}, initialLocale: locale, userConfig: null } };
+  }
 };
+
+// Export as default and named export for flexibility
+export default getServerSideTranslations;
