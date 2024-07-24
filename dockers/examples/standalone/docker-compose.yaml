@@ -7,7 +7,7 @@ services:
       dockerfile: dockers/teable/Dockerfile
       args:
         NODE_VERSION: 20.9.0
-        BUILD_VERSION: "1.0.0-alpha"
+        BUILD_VERSION: "1.0.0-beta"
         ENABLE_CSP: "true"
         SENTRY_ENABLED: "true"
         SENTRY_TRACING: "true"
