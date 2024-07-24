@@ -1,33 +1,21 @@
-import { useTranslation } from 'next-i18next';
+import type { GetStaticPropsContext } from 'next';
 import { systemConfig } from '@/features/i18n/system.config';
 import { PaymentRequiredPage } from '@/features/system/pages';
-import { useEffect } from 'react';
 import { getServerSideTranslations } from '@/lib/i18n';
-import type { GetServerSideProps, GetServerSidePropsContext } from 'next';
 
-export default function Custom402() {
-  const { i18n, t } = useTranslation(systemConfig.i18nNamespaces);
+export const getStaticProps = async (context: GetStaticPropsContext) => {
+  const { locale = 'en' } = context;
 
-  useEffect(() => {
-    const loadTranslations = async () => {
-      if (typeof window !== 'undefined') {
-        const { getClientSideTranslations } = await import('@/lib/i18n');
-        await getClientSideTranslations(i18n.language, systemConfig.i18nNamespaces);
-      }
-    };
-    loadTranslations();
-  }, [i18n.language]);
+  const inlinedTranslation = await getServerSideTranslations(locale, systemConfig.i18nNamespaces);
 
-  return <PaymentRequiredPage />;
-}
-
-export const getServerSideProps: GetServerSideProps = async (
-  context: GetServerSidePropsContext
-) => {
-  const { locale } = context;
   return {
     props: {
-      ...(await getServerSideTranslations(locale, systemConfig.i18nNamespaces)),
+      locale: locale,
+      ...inlinedTranslation,
     },
   };
 };
+
+export default function Custom402() {
+  return <PaymentRequiredPage />;
+}

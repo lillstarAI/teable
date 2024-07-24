@@ -84,9 +84,6 @@ const secureHeaders = createSecureHeaders({
           frameSrc: ["'self'"],
           connectSrc: [
             "'self'",
-            'ws:',
-            'wss:',
-            'https://*.teable.se',
             'https://*.sentry.io',
             'https://*.teable.io',
             'https://*.teable.cn',
@@ -211,7 +208,7 @@ const nextConfig = {
       destination: `http://localhost:${NEXTJS_SOCKET_PORT}/socket/:path*`,
     };
 
-    return [socketProxy];
+    return isProd ? [] : [socketProxy];
   },
 
   // @link https://nextjs.org/docs/api-reference/next.config.js/headers
@@ -269,7 +266,7 @@ const nextConfig = {
     fileLoaderRule.exclude = /\.svg$/i;
 
     return config;
-  },  
+  },
   env: {
     APP_NAME: packageJson.name ?? 'not-in-package.json',
     APP_VERSION: packageJson.version ?? 'not-in-package.json',
