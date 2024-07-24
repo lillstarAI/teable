@@ -3,8 +3,8 @@ version: '3.9'
 services:
   traefik:
     container_name: coolify-proxy
-    image: 'traefik:v2.11'
-    restart: unless-stopped
+    image: 'ghcr.io/teableio/teable:latest'
+    restart: always
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     networks:
