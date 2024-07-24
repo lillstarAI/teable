@@ -1,59 +1,37 @@
 version: '3.9'
 
 services:
-  traefik:
-    container_name: coolify-proxy
-    image: 'traefik:v2.11'
-    restart: unless-stopped
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
+  teable:
+    image: ghcr.io/teableio/teable:latest
+    restart: always
+    ports:
+      - '3000:3000'
+    volumes:
+      - teable-data:/app/.assets:rw
+      # you may use a bind-mounted host directory instead,
+      # so that it is harder to accidentally remove the volume and lose all your data!
+      # - ./docker/teable/data:/app/.assets:rw
+    env_file:
+      - .env
+    environment:
+      - TZ=${TIMEZONE}
+      - NEXT_ENV_IMAGES_ALL_REMOTE=true
     networks:
       - teable-standalone
-      - q08gwww
-    ports:
-      - '80:80'
-      - '443:443'
-      - '8080:8080'
-    healthcheck:
-      test: 'wget -qO- http://${LOCALHOST}:80/ping || exit 1'
-      interval: 4s
-      timeout: 2s
-      retries: 5
-    volumes:
-      - '/var/run/docker.sock:/var/run/docker.sock:ro'
-      - '/data/coolify/proxy:/traefik'
-    command:
-      - '--ping=true'
-      - '--ping.entrypoint=http'
-      - '--api.dashboard=true'
-      - '--api.insecure=false'
-      - '--entrypoints.http.address=:80'
-      - '--entrypoints.https.address=:443'
-      - '--entrypoints.http.http.encodequerysemicolons=true'
-      - '--entryPoints.http.http2.maxConcurrentStreams=50'
-      - '--entrypoints.https.http.encodequerysemicolons=true'
-      - '--entryPoints.https.http2.maxConcurrentStreams=50'
-      - '--providers.docker.exposedbydefault=false'
-      - '--providers.file.directory=/traefik/dynamic/'
-      - '--providers.file.watch=true'
-      - '--certificatesresolvers.letsencrypt.acme.httpchallenge=true'
-      - '--certificatesresolvers.letsencrypt.acme.storage=/traefik/acme.json'
-      - '--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=http'
-      - '--providers.docker=true'
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.traefik.entrypoints=http
-      - traefik.http.routers.traefik.service=api@internal
-      - traefik.http.services.traefik.loadbalancer.server.port=8080
-      - coolify.managed=true
+    depends_on:
+      teable-db-migrate:
+        condition: service_completed_successfully
 
   teable-db:
-    image: 'postgres:15.4'
+    image: postgres:15.4
     restart: always
-    expose:
-      - '5432'
+    ports:
+      - '42345:5432'
     volumes:
-      - '/data/coolify/applications/q08gwww/docker/db/data:/var/lib/postgresql/data:rw'
+      - teable-db:/var/lib/postgresql/data:rw
+      # you may use a bind-mounted host directory instead,
+      # so that it is harder to accidentally remove the volume and lose all your data!
+      # - ./docker/db/data:/var/lib/postgresql/data:rw
     environment:
       - TZ=${TIMEZONE}
       - POSTGRES_DB=${POSTGRES_DB}
@@ -61,136 +39,28 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     networks:
       - teable-standalone
-      - q08gwww
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ['CMD-SHELL', "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'"]
       interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  redis:
-    image: 'redis:alpine'
-    restart: always
-    expose:
-      - '6379'
-    networks:
-      - teable-standalone
-      - q08gwww
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    volumes:
-      - 'q08gwww-redis-data:/data'
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
-
-  minio:
-    image: minio/minio
-    restart: always
-    expose:
-      - '9000'
-      - '9001'
-    volumes:
-      - 'q08gwww-minio-data:/data'
-    environment:
-      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
-      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
-    command: 'server --console-address ":9001" /data'
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
+      timeout: 3s
       retries: 3
-      start_period: 20s
-    networks:
-      - teable-standalone
-      - q08gwww
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.minio.rule=Host(`minio.teable.se`)
-      - traefik.http.services.minio.loadbalancer.server.port=9000
 
   teable-db-migrate:
-    image: 'ghcr.io/teableio/teable-db-migrate:latest'
-    restart: on-failure
+    image: ghcr.io/teableio/teable-db-migrate:latest
     environment:
       - TZ=${TIMEZONE}
-      - PRISMA_DATABASE_URL=${PRISMA_DATABASE_URL}
-      - NEXTJS_DIR=${NEXTJS_DIR}
+      - PRISMA_DATABASE_URL=${PRISMA_DATABSE_URL}
     networks:
       - teable-standalone
-      - q08gwww
     depends_on:
       teable-db:
         condition: service_healthy
-
-  teable:
-    build:
-      context: https://github.com/lillstarAI/teable.git
-      dockerfile: dockers/teable/Dockerfile
-      args:
-        - DATABASE_URL=${DATABASE_URL}
-    restart: always
-    expose:
-      - '3000'
-      - '3001'
-    volumes:
-      - 'q08gwww-teable-data:/app/.assets:rw'
-    env_file:
-      - .env
-    environment:
-      - TZ=${TIMEZONE}
-      - NEXT_ENV_IMAGES_ALL_REMOTE=true
-      - PORT=${PORT}
-      - SOCKET_PORT=${SOCKET_PORT}
-      - NEXTJS_DIR=${NEXTJS_DIR}
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
-      - BRAND_NAME=${BRAND_NAME}
-      - API_DOC_ENABLED_SNIPPET=${API_DOC_ENABLED_SNIPPET}
-      - I18NEXT_DEFAULT_CONFIG_PATH=${I18NEXT_DEFAULT_CONFIG_PATH}
-      - LOG_LEVEL=${LOG_LEVEL}
-      - APP_CACHE_DSN=${APP_CACHE_DSN}
-      - NEXT_BUILD_ENV_OUTPUT=${NEXT_BUILD_ENV_OUTPUT}
-      - NEXT_BUILD_ENV_SOURCEMAPS=${NEXT_BUILD_ENV_SOURCEMAPS}
-      - NEXT_BUILD_ENV_CSP=${NEXT_BUILD_ENV_CSP}
-      - PUBLIC_ORIGIN=${PUBLIC_ORIGIN}
-      - ASSET_PREFIX=${ASSET_PREFIX}
-    networks:
-      - teable-standalone
-      - q08gwww
-    depends_on:
-      redis:
-        condition: service_healthy
-      teable-db:
-        condition: service_healthy
-      teable-db-migrate:
-        condition: service_completed_successfully
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.teable.entrypoints=http
-      - traefik.http.routers.teable.rule=Host(`teable.se`)
-      - traefik.http.services.teable.loadbalancer.server.port=3000
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
 networks:
   teable-standalone:
     name: teable-standalone-network
-  q08gwww:
-    external: true
+    driver: bridge
 
 volumes:
-  q08gwww-redis-data:
-    name: q08gwww-redis-data
-  q08gwww-minio-data:
-    name: q08gwww-minio-data
-  q08gwww-teable-data:
-    name: q08gwww-teable-data
+  teable-data: {}
+  teable-db: {}
