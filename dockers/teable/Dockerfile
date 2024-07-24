@@ -16,11 +16,11 @@ ENV HUSKY=0
 
 WORKDIR /app
 
-COPY --from=deps --link /app ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 
 RUN pnpm fetch
 
-COPY --link . .
+COPY . .
 
 RUN pnpm install --prefer-offline --frozen-lockfile
 RUN pnpm -F @teable/db-main-prisma prisma-generate --schema ./prisma/postgres/schema.prisma
@@ -47,7 +47,7 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 
-COPY --from=deps --link /workspace-install ./
+COPY --from=deps --link /app ./
 
 # Copy the .env file
 COPY --link apps/nextjs-app/.env ./apps/nextjs-app/.env
