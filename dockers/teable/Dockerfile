@@ -38,13 +38,8 @@ COPY --from=deps /app ./
 COPY apps/nextjs-app/.env ./apps/nextjs-app/.env
 
 RUN set -ex; \
-        echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
-# Distinguish whether it is an integration test operation
-        if [ -n "$INTEGRATION_TEST" ]; then \
-              pnpm -F "./packages/**" run build; \
-        else \
-              NODE_OPTIONS=--max-old-space-size=8192 pnpm g:build; \
-        fi
+     echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
+     NODE_OPTIONS=--max-old-space-size=8192 pnpm g:build --no-lint
 
 # Stage 3: Post Builder
 FROM builder as post-builder
