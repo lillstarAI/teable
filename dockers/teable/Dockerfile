@@ -49,13 +49,12 @@ WORKDIR /app
 COPY --from=deps --link /workspace-install ./
 
 RUN set -ex; \
-        echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
-# Distinguish whether it is an integration test operation
-        if [ -n "$INTEGRATION_TEST" ]; then \
-              pnpm -F "./packages/**" run build; \
-        else \
-              NODE_OPTIONS=--max-old-space-size=8192 pnpm g:build; \
-        fi
+    echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
+    if [ -n "$INTEGRATION_TEST" ]; then \
+        pnpm -F "./packages/**" run build --verbose; \
+    else \
+        NODE_OPTIONS=--max-old-space-size=8192 pnpm g:build --verbose; \
+    fi
 
 
 ##################################################################
