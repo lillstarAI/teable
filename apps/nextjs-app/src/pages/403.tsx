@@ -3,16 +3,30 @@ import { systemConfig } from '@/features/i18n/system.config';
 import { ForbiddenPage } from '@/features/system/pages';
 import { useEffect, useState } from 'react';
 import { getServerSideTranslations } from '@/lib/i18n';
+import type { GetStaticProps } from 'next';
 
-export default function Custom403() {
-  const [translations, setTranslations] = useState({});
+// Funktion för att hämta fallback-översättningar
+const getFallbackTranslations = (locale: string) => {
+  // Implementera detta med hårdkodade översättningar för byggtid
+  return {
+    // Exempel:
+    // common: {
+    //   title: locale === 'sv' ? 'Åtkomst nekad' : 'Forbidden',
+    // },
+  };
+};
+
+export default function Custom403({ initialTranslations }: { initialTranslations: any }) {
+  const [translations, setTranslations] = useState(initialTranslations);
   const { i18n } = useTranslation();
 
   useEffect(() => {
     const loadTranslations = async () => {
-      const locale = i18n.language || 'en';
-      const inlinedTranslation = await getServerSideTranslations(locale, systemConfig.i18nNamespaces);
-      setTranslations(inlinedTranslation);
+      if (process.env.NODE_ENV !== 'production') {
+        const locale = i18n.language || 'en';
+        const inlinedTranslation = await getServerSideTranslations(locale, systemConfig.i18nNamespaces);
+        setTranslations(inlinedTranslation);
+      }
     };
 
     loadTranslations();
@@ -21,13 +35,18 @@ export default function Custom403() {
   return <ForbiddenPage {...translations} />;
 }
 
-// This is needed to tell Next.js that this page should be statically generated
 export const getStaticProps: GetStaticProps = async ({ locale = 'en' }) => {
-  const inlinedTranslation = await getServerSideTranslations(locale, systemConfig.i18nNamespaces);
+  let inlinedTranslation;
+
+  if (process.env.NODE_ENV === 'production') {
+    inlinedTranslation = getFallbackTranslations(locale);
+  } else {
+    inlinedTranslation = await getServerSideTranslations(locale, systemConfig.i18nNamespaces);
+  }
+
   return {
     props: {
-      locale: locale,
-      ...inlinedTranslation,
+      initialTranslations: inlinedTranslation,
     },
   };
 };
