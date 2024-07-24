@@ -1,6 +1,56 @@
 version: '3.9'
 
 services:
+  teable:
+    build:
+      context: .
+      dockerfile: dockers/teable/Dockerfile
+      args:
+        NODE_VERSION: 20.9.0
+        BUILD_VERSION: "1.0.0-alpha"
+        ENABLE_CSP: "true"
+        SENTRY_ENABLED: "true"
+        SENTRY_TRACING: "true"
+    image: teable:latest
+    restart: always
+    expose:
+      - '3000'
+      - '3001'
+    volumes:
+      - teable_data:/app/.assets
+    env_file:
+      - .env
+    environment:
+      - TZ=${TIMEZONE}
+      - NODE_ENV=production
+      - PORT=${PORT}
+      - SOCKET_PORT=${SOCKET_PORT}
+      - NEXTJS_DIR=${NEXTJS_DIR}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - BRAND_NAME=${BRAND_NAME}
+      - NEXT_ENV_IMAGES_ALL_REMOTE=${NEXT_ENV_IMAGES_ALL_REMOTE}
+      - API_DOC_ENABLED_SNIPPET=${API_DOC_ENABLED_SNIPPET}
+      - I18NEXT_DEFAULT_CONFIG_PATH=${I18NEXT_DEFAULT_CONFIG_PATH}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - APP_CACHE_DSN=${APP_CACHE_DSN}
+      - NEXT_BUILD_ENV_OUTPUT=${NEXT_BUILD_ENV_OUTPUT}
+      - NEXT_BUILD_ENV_SOURCEMAPS=${NEXT_BUILD_ENV_SOURCEMAPS}
+      - NEXT_BUILD_ENV_CSP=${NEXT_BUILD_ENV_CSP}
+      - NEXT_BUILD_ENV_SENTRY_ENABLED=${NEXT_BUILD_ENV_SENTRY_ENABLED}
+      - NEXT_BUILD_ENV_SENTRY_UPLOAD_DRY_RUN=${NEXT_BUILD_ENV_SENTRY_UPLOAD_DRY_RUN}
+      - PUBLIC_ORIGIN=${PUBLIC_ORIGIN}
+      - ASSET_PREFIX=${ASSET_PREFIX}
+    networks:
+      - teable-standalone
+    depends_on:
+      redis:
+        condition: service_healthy
+      teable-db:
+        condition: service_healthy
+
   teable-db:
     image: 'postgres:15.4'
     restart: always
@@ -26,7 +76,7 @@ services:
     image: 'redis:alpine'
     restart: always
     expose:
-      - '6380'
+      - '6379'
     networks:
       - teable-standalone
     healthcheck:
@@ -48,8 +98,8 @@ services:
     volumes:
       - minio_data:/data
     environment:
-      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
-      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+      - MINIO_ROOT_USER=${BACKEND_STORAGE_MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${BACKEND_STORAGE_MINIO_SECRET_KEY}
     command: 'server --console-address ":9001" /data'
     healthcheck:
       test: ["CMD", "curl", "-f", "https://minio-server.teable.se:9001/minio/health/live"]
@@ -59,59 +109,6 @@ services:
       start_period: 20s
     networks:
       - teable-standalone
-
-  teable-db-migrate:
-    image: 'ghcr.io/teableio/teable-db-migrate:latest'
-    restart: on-failure
-    environment:
-      - TZ=${TIMEZONE}
-      - PRISMA_DATABASE_URL=${PRISMA_DATABASE_URL}
-      - NEXTJS_DIR=${NEXTJS_DIR}
-    networks:
-      - teable-standalone
-    depends_on:
-      teable-db:
-        condition: service_healthy
-
-  teable:
-    image: 'ghcr.io/teableio/teable:latest'
-    restart: always
-    expose:
-      - '3000'
-      - '3001'
-    volumes:
-      - teable_data:/app/.assets
-    env_file:
-      - .env
-    environment:
-      - TZ=${TIMEZONE}
-      - NEXT_ENV_IMAGES_ALL_REMOTE=${NEXT_ENV_IMAGES_ALL_REMOTE}
-      - PORT=${PORT}
-      - SOCKET_PORT=${SOCKET_PORT}
-      - NEXTJS_DIR=${NEXTJS_DIR}
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6380
-      - BRAND_NAME=${BRAND_NAME}
-      - API_DOC_ENABLED_SNIPPET=${API_DOC_ENABLED_SNIPPET}
-      - I18NEXT_DEFAULT_CONFIG_PATH=${I18NEXT_DEFAULT_CONFIG_PATH}
-      - LOG_LEVEL=${LOG_LEVEL}
-      - NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
-      - SENTRY_DSN=${SENTRY_DSN}
-      - APP_CACHE_DSN=${APP_CACHE_DSN}
-      - NEXT_BUILD_ENV_OUTPUT=${NEXT_BUILD_ENV_OUTPUT}
-      - NEXT_BUILD_ENV_SOURCEMAPS=${NEXT_BUILD_ENV_SOURCEMAPS}
-      - NEXT_BUILD_ENV_CSP=${NEXT_BUILD_ENV_CSP}
-      - NEXT_BUILD_ENV_SENTRY_ENABLED=${NEXT_BUILD_ENV_SENTRY_ENABLED}
-      - NEXT_BUILD_ENV_SENTRY_UPLOAD_DRY_RUN=${NEXT_BUILD_ENV_SENTRY_UPLOAD_DRY_RUN}
-      - PUBLIC_ORIGIN=${PUBLIC_ORIGIN}
-      - ASSET_PREFIX=${ASSET_PREFIX}
-    networks:
-      - teable-standalone
-    depends_on:
-      redis:
-        condition: service_healthy
-      teable-db-migrate:
-        condition: service_completed_successfully
 
 networks:
   teable-standalone:
