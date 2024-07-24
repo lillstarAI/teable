@@ -87,11 +87,11 @@ RUN set -ex; \
 
 FROM node:${NODE_VERSION}-bookworm-slim AS runner
 
-ENV TZ=UTC \
-    NODE_ENV=production \
-    PORT=${NEXTJS_APP_PORT:-3000}\
-    BRAND_NAME=teable\
-    NEXTJS_DIR=apps/nextjs-app
+ENV TZ=${TZ} \
+    NODE_ENV=${NODE_ENV} \
+    PORT=${PORT}\
+    BRAND_NAME=${BRAND_NAME}\
+    NEXTJS_DIR=${NEXTJS_DIR}
 
 RUN set -ex; \
         npm install zx -g; \
