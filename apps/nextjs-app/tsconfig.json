@@ -10,6 +10,7 @@
     "jsx": "preserve",
     "incremental": true,
     "paths": {
+      "@/*": ["src/*"],
       "@/test-utils": ["../config/tests/test-utils"],
       "@/config/*": ["./config/*"],
       "@/lib/*": ["src/lib/*"],
