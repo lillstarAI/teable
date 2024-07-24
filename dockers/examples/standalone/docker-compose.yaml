@@ -127,6 +127,8 @@ services:
     build:
       context: https://github.com/lillstarAI/teable.git
       dockerfile: dockers/teable/Dockerfile
+      args:
+        - DATABASE_URL=${DATABASE_URL}
     restart: always
     ports:
       - '3000:3000'
@@ -163,6 +165,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      teable-db:
+        condition: service_healthy
       teable-db-migrate:
         condition: service_completed_successfully
     labels:
@@ -190,5 +194,3 @@ volumes:
     name: q08gwww-minio-data
   q08gwww-teable-data:
     name: q08gwww-teable-data
-  teable-data: {}
-  teable-db: {}
