@@ -51,9 +51,9 @@ COPY --from=deps --link /workspace-install ./
 RUN set -ex; \
     echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
     if [ -n "$INTEGRATION_TEST" ]; then \
-        pnpm -F "./packages/**" run build --verbose; \
+        pnpm build:icons && pnpm build:other-packages; \
     else \
-        NODE_OPTIONS=--max-old-space-size=8192 pnpm g:build --verbose; \
+        NODE_OPTIONS=--max-old-space-size=8192 pnpm g:build; \
     fi
 
 
