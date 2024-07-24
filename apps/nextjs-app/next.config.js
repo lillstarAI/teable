@@ -275,6 +275,21 @@ const nextConfig = {
     APP_VERSION: packageJson.version ?? 'not-in-package.json',
     BUILD_TIME: new Date().toISOString(),
   },
+
+  // Tillagda konfigurationer för svenska och felsidor
+  i18n: {
+    locales: ['en', 'sv'],
+    defaultLocale: 'en',
+  },
+
+  exportPathMap: async function (defaultPathMap) {
+    return {
+      ...defaultPathMap,
+      '/402': { page: '/402' },
+      '/403': { page: '/403' },
+      '/404': { page: '/404' },
+    };
+  },
 };
 
 let config = nextConfig;
