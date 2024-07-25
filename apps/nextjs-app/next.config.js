@@ -272,13 +272,6 @@ const nextConfig = {
     APP_VERSION: packageJson.version ?? 'not-in-package.json',
     BUILD_TIME: new Date().toISOString(),
   },
-  // Lägg till denna del för att hantera statiska sidor
-  exportPathMap: async function (defaultPathMap, { dev, dir, outDir, distDir, buildId }) {
-    delete defaultPathMap['/402']
-    delete defaultPathMap['/403']
-    delete defaultPathMap['/404']
-    return defaultPathMap
-  }
 };
 
 let config = nextConfig;
