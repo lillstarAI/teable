@@ -6,16 +6,12 @@ services:
     restart: always
     ports:
       - '3000:3000'
-      - '3001:3001'  # Add this line to expose the socket port
     volumes:
       - teable-data:/app/.assets:rw
-    env_file:
-      - .env
     environment:
       - TZ=${TIMEZONE}
       - NEXT_ENV_IMAGES_ALL_REMOTE=true
-      - SOCKET_PORT=3001
-      # Add any other necessary environment variables here
+      - TEABLE_ORIGIN=${TEABLE_ORIGIN}
     networks:
       - teable-standalone
     depends_on:
@@ -52,6 +48,7 @@ services:
     depends_on:
       teable-db:
         condition: service_healthy
+    restart: "no"
 
 networks:
   teable-standalone:
