@@ -85,7 +85,7 @@ const secureHeaders = createSecureHeaders({
           connectSrc: [
             "'self'",
             'https://*.sentry.io',
-            'https://*.teable.io',
+            'https://*.teable.se',
             'https://*.teable.cn',
             'https://*.clarity.ms',
           ],
