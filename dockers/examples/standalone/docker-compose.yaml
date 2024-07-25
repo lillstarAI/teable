@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   teable:
-    image: ghcr.io/teableio/teable:latest
+    image: ghcr.io/lillstarai/teable:latest
     restart: always
     ports:
       - '3000:3000'
@@ -46,7 +46,7 @@ services:
       retries: 3
 
   teable-db-migrate:
-    image: ghcr.io/teableio/teable-db-migrate:latest
+    image: ghcr.io/lillstarai/teable-db-migrate:latest
     environment:
       - TZ=${TIMEZONE}
       - PRISMA_DATABASE_URL=${PRISMA_DATABASE_URL}
