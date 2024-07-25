@@ -8,10 +8,12 @@ services:
       - '3000:3000'
     volumes:
       - teable-data:/app/.assets:rw
+      # - ./docker/teable/data:/app/.assets:rw  # Uncomment to use bind mount
+    env_file:
+      - .env
     environment:
       - TZ=${TIMEZONE:-Europe/Stockholm}
       - NEXT_ENV_IMAGES_ALL_REMOTE=true
-      - DATABASE_URL=${DATABASE_URL}
     networks:
       - teable-standalone
     depends_on:
@@ -32,67 +34,27 @@ services:
       - '42345:5432'
     volumes:
       - teable-db:/var/lib/postgresql/data:rw
+      # - ./docker/db/data:/var/lib/postgresql/data:rw  # Uncomment to use bind mount
     environment:
       - TZ=${TIMEZONE:-Europe/Stockholm}
       - POSTGRES_DB=${POSTGRES_DB:-teable}
       - POSTGRES_USER=${POSTGRES_USER:-teable}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - NETDATA_USER=${NETDATA_USER:-netdata}
-      - NETDATA_PASSWORD=${NETDATA_PASSWORD}
     networks:
       - teable-standalone
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-teable} -d ${POSTGRES_DB:-teable}"]
+      test: ['CMD-SHELL', "pg_isready -U ${POSTGRES_USER:-teable} -d ${POSTGRES_DB:-teable}"]
       interval: 10s
-      timeout: 5s
-      retries: 5
-    command: >
-      bash -c "
-        echo \"CREATE USER ${NETDATA_USER:-netdata} WITH PASSWORD '${NETDATA_PASSWORD:-netdata}';\" > /docker-entrypoint-initdb.d/init-netdata-user.sql &&
-        echo \"GRANT pg_monitor TO ${NETDATA_USER:-netdata};\" >> /docker-entrypoint-initdb.d/init-netdata-user.sql &&
-        docker-entrypoint.sh postgres
-      "
+      timeout: 3s
+      retries: 3
 
   teable-db-migrate:
     image: ghcr.io/teableio/teable-db-migrate:latest
     environment:
       - TZ=${TIMEZONE:-Europe/Stockholm}
-      - DATABASE_URL=${DATABASE_URL}
+      - PRISMA_DATABASE_URL=${PRISMA_DATABASE_URL}
     networks:
       - teable-standalone
-    depends_on:
-      teable-db:
-        condition: service_healthy
-
-  netdata:
-    image: netdata/netdata:latest
-    container_name: netdata
-    hostname: teable-netdata
-    ports:
-      - 19999:19999
-    cap_add:
-      - SYS_PTRACE
-    security_opt:
-      - apparmor:unconfined
-    volumes:
-      - netdataconfig:/etc/netdata
-      - netdatalib:/var/lib/netdata
-      - netdatacache:/var/cache/netdata
-      - /etc/passwd:/host/etc/passwd:ro
-      - /etc/group:/host/etc/group:ro
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /etc/os-release:/host/etc/os-release:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    environment:
-      - PGHOST=teable-db
-      - PGPORT=5432
-      - PGDATABASE=${POSTGRES_DB:-teable}
-      - PGUSER=${NETDATA_USER:-netdata}
-      - PGPASSWORD=${NETDATA_PASSWORD}
-    networks:
-      - teable-standalone
-    restart: unless-stopped
     depends_on:
       teable-db:
         condition: service_healthy
@@ -103,8 +65,5 @@ networks:
     driver: bridge
 
 volumes:
-  teable-data:
-  teable-db:
-  netdataconfig:
-  netdatalib:
-  netdatacache:
+  teable-data: {}
+  teable-db: {}
