@@ -25,7 +25,7 @@ services:
     ports:
       - '42345:5432'
     volumes:
-      - teable-db:/var/lib/postgresql/data:rw
+      - ./docker/db/data:/var/lib/postgresql/data:rw
     environment:
       - TZ=${TIMEZONE}
       - POSTGRES_DB=${POSTGRES_DB}
