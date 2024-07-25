@@ -1,4 +1,5 @@
 #!/usr/bin/env zx
+import 'zx/globals';
 import { parseDsn as parse } from '@soluble/dsn-parser';
 
 const env = $.env;
