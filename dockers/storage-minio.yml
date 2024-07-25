@@ -12,8 +12,8 @@ services:
     networks:
       - teable-net
     environment:
-      - MINIO_ROOT_USER${MINIO_ACCESS_KEY}
-      - MINIO_ROOT_PASSEORD=${MINIO_SECRET_KEY}
+      - MINIO_ROOT_USER${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSEORD=${MINIO_ROOT_PASSEORD}
     volumes:
       - storage_data:/data:rw
       # you may use a bind-mounted host directory instead,
@@ -29,7 +29,7 @@ services:
       - teable-storage
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set teable-storage http://teable-storage:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY};
+      /usr/bin/mc alias set teable-storage ${MINIO} ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSEORD};
       /usr/bin/mc mb teable-storage/public;
       /usr/bin/mc anonymous set public teable-storage/public;
       /usr/bin/mc mb teable-storage/private;
