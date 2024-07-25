@@ -1,15 +1,10 @@
-import type { GetServerSidePropsContext } from 'next';
-import { systemConfig } from '@/features/i18n/system.config';
+import type { GetStaticPropsContext } from 'next';
 import { PaymentRequiredPage } from '@/features/system/pages';
-import { getServerSideTranslations } from '@/lib/i18n';
 
-export const getStaticProps = async ({ locale = 'en' }: { locale?: string }) => {
-  const inlinedTranslation = await getServerSideTranslations(locale, systemConfig.i18nNamespaces);
-
+export const getStaticProps = async ({ locale = 'en' }: GetStaticPropsContext) => {
   return {
     props: {
-      locale: locale,
-      ...inlinedTranslation,
+      locale,
     },
   };
 };
