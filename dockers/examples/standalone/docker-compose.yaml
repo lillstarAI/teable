@@ -8,9 +8,6 @@ services:
       - '3000:3000'
     volumes:
       - teable-data:/app/.assets:rw
-      # you may use a bind-mounted host directory instead,
-      # so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/teable/data:/app/.assets:rw
     env_file:
       - .env
     environment:
@@ -29,9 +26,6 @@ services:
       - '42345:5432'
     volumes:
       - teable-db:/var/lib/postgresql/data:rw
-      # you may use a bind-mounted host directory instead,
-      # so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/db/data:/var/lib/postgresql/data:rw
     environment:
       - TZ=${TIMEZONE}
       - POSTGRES_DB=${POSTGRES_DB}
