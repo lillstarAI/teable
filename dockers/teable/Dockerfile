@@ -39,8 +39,8 @@ COPY apps/nextjs-app/.env ./apps/nextjs-app/.env
 
 RUN set -ex; \
     echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
-    NEXT_BUILD_ENV_LINT=false NODE_OPTIONS=--max-old-space-size=8192 pnpm g:build --debug
-    
+    NEXT_BUILD_ENV_LINT=false NODE_OPTIONS=--max-old-space-size=8192 pnpm g:build
+        
 # Stage 3: Post Builder
 FROM builder as post-builder
 

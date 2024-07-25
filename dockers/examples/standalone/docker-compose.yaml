@@ -98,8 +98,8 @@ services:
     volumes:
       - minio_data:/data
     environment:
-      - MINIO_ROOT_USER=${BACKEND_STORAGE_MINIO_ACCESS_KEY}
-      - MINIO_ROOT_PASSWORD=${BACKEND_STORAGE_MINIO_SECRET_KEY}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     command: 'server --console-address ":9001" /data'
     healthcheck:
       test: ["CMD", "curl", "-f", "https://minio-server.teable.se:9001/minio/health/live"]
