@@ -21,7 +21,7 @@ services:
       retries: 3
 
   teable-db-migrate:
-    image: ghcr.io/lillstarai/teable-db-migrate:latest
+    image: ghcr.io/teableio/teable-db-migrate:latest
     deploy:
       restart_policy:
         condition: on-failure
