@@ -9,11 +9,14 @@ RUN corepack enable && pnpm add npm-run-all2 zx -g
 
 ENV HUSKY=0
 
-WORKDIR /app
+WORKDIR /workspace-install
 
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY --link package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+
 RUN pnpm fetch
-COPY . .
+
+COPY --link . .
+
 RUN pnpm install --prefer-offline --frozen-lockfile
 RUN pnpm -F @teable/db-main-prisma prisma-generate --schema ./prisma/postgres/schema.prisma
 
@@ -36,11 +39,16 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 
-COPY .env ./
-COPY apps/nextjs-app/.env ./apps/nextjs-app/.env
+COPY --from=deps --link /workspace-install ./
 
 RUN set -ex; \
-    echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
+        echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
+# Distinguish whether it is an integration test operation
+        if [ -n "$INTEGRATION_TEST" ]; then \
+              pnpm -F "./packages/**" run build; \
+        else \
+              NODE_OPTIONS=--max-old-space-size=8192 pnpm g:build; \
+        fi
         
 # Stage 3: Post Builder
 FROM builder as post-builder
