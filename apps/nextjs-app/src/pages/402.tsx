@@ -1,7 +1,21 @@
+import type { GetStaticPropsContext } from 'next';
+import { systemConfig } from '@/features/i18n/system.config';
 import { PaymentRequiredPage } from '@/features/system/pages';
+import { getServerSideTranslations } from '@/lib/i18n';
 
-const CustomErrorPage = () => <PaymentRequiredPage />;
+export const getStaticProps = async (context: GetStaticPropsContext) => {
+  const { locale = 'en' } = context;
 
-CustomErrorPage.getInitialProps = () => ({});
+  const inlinedTranslation = await getServerSideTranslations(locale, systemConfig.i18nNamespaces);
 
-export default CustomErrorPage;
+  return {
+    props: {
+      locale: locale,
+      ...inlinedTranslation,
+    },
+  };
+};
+
+export default function Custom402() {
+  return <PaymentRequiredPage />;
+}
