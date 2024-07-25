@@ -22,7 +22,7 @@ services:
       start_period: 40s
 
   teable-db-migrate:
-    image: ghcr.io/teableio/teable-db-migrate:latest
+    image: ghcr.io/lillstarai/teable-db-migrate:latest
     deploy:
       restart_policy:
         condition: on-failure
@@ -85,12 +85,3 @@ services:
       /usr/bin/mc mb teable-storage/private;
       exit 0;
       "
-
-networks:
-  teable-swarm:
-    external: true
-
-volumes:
-  teable-db:
-  teable-cache:
-  teable-storage:
