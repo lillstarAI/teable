@@ -1,8 +1,8 @@
-#!/usr/bin/env zx
+#!/usr/bin/env node
 import 'zx/globals';
 import { parseDsn as parse } from '@soluble/dsn-parser';
 
-const env = $.env;
+const env = process.env;
 let isCi = ['true', '1'].includes(env?.CI ?? '');
 
 const buildVersion = env.BUILD_VERSION;
@@ -27,7 +27,7 @@ const pgMigrate = async () => {
 };
 
 const killMe = async () => {
-  await $`exit 0`;
+  process.exit(0);
 };
 
 console.log(`DB Migrate Version: ${buildVersion}`);
