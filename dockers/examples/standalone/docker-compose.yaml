@@ -6,6 +6,7 @@ services:
     restart: always
     ports:
       - '3000:3000'
+      - '3001:3001'  # Add this line to expose the socket port
     volumes:
       - teable-data:/app/.assets:rw
     env_file:
@@ -13,6 +14,8 @@ services:
     environment:
       - TZ=${TIMEZONE}
       - NEXT_ENV_IMAGES_ALL_REMOTE=true
+      - SOCKET_PORT=3001
+      # Add any other necessary environment variables here
     networks:
       - teable-standalone
     depends_on:
@@ -44,19 +47,11 @@ services:
     environment:
       - TZ=${TIMEZONE}
       - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
-    volumes:
-      - ./prisma/scripts:/prisma/scripts
     networks:
       - teable-standalone
     depends_on:
       teable-db:
         condition: service_healthy
-    command: >
-      sh -c "
-        npm install -g zx &&
-        sleep 10 &&
-        node /prisma/scripts/db-migrate.mjs
-      "
 
 networks:
   teable-standalone:
@@ -65,4 +60,3 @@ networks:
 
 volumes:
   teable-data: {}
-  teable-db: {}
