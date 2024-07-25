@@ -12,8 +12,8 @@ services:
     networks:
       - teable-net
     environment:
-      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
-      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_ROOT_USER${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSEORD=${MINIO_SECRET_KEY}
     volumes:
       - storage_data:/data:rw
       # you may use a bind-mounted host directory instead,
