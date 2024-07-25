@@ -39,7 +39,7 @@ services:
     ports:
       - '3000:3000'
     volumes:
-      - teable-data:/app/.assets:rw
+      - ./docker/db/data:/var/lib/postgresql/data:rw
     env_file:
       - .env
     environment:
