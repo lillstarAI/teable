@@ -21,22 +21,24 @@ services:
       timeout: 3s
       retries: 3
 
-  teable-db-migrate:
-    image: ghcr.io/teableio/teable-db-migrate:latest
-    environment:
-      - TZ=${TIMEZONE}
-      - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
-    networks:
-      - teable-standalone
-    depends_on:
-      teable-db:
-        condition: service_healthy
-    command: >
-      sh -c "
-        npm install -g zx &&
-        sleep 10 &&
-        node /prisma/scripts/db-migrate.mjs
-      "
+teable-db-migrate:
+  image: ghcr.io/teableio/teable-db-migrate:latest
+  environment:
+    - TZ=${TIMEZONE}
+    - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
+  volumes:
+    - ./prisma/scripts:/prisma/scripts
+  networks:
+    - teable-standalone
+  depends_on:
+    teable-db:
+      condition: service_healthy
+  command: >
+    sh -c "
+      npm install -g zx &&
+      sleep 10 &&
+      node /prisma/scripts/db-migrate.mjs
+    "
 
   teable:
     image: ghcr.io/teableio/teable:latest
