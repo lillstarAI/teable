@@ -24,13 +24,15 @@ ARG BUILD_VERSION
 ARG ENABLE_CSP=true
 ARG SENTRY_ENABLED=true
 ARG SENTRY_TRACING=true
+ARG DATABASE_URL
 
 ENV NODE_ENV=production \
     NEXT_BUILD_ENV_CSP=${ENABLE_CSP} \
     NEXT_BUILD_ENV_TYPECHECK=false \
     NEXT_BUILD_ENV_LINT=false \
     NEXT_BUILD_ENV_SENTRY_ENABLED=${SENTRY_ENABLED} \
-    NEXT_BUILD_ENV_SENTRY_TRACING=${SENTRY_TRACING}
+    NEXT_BUILD_ENV_SENTRY_TRACING=${SENTRY_TRACING} \
+    DATABASE_URL=${DATABASE_URL}
 
 WORKDIR /app
 
@@ -39,6 +41,7 @@ COPY apps/nextjs-app/.env ./apps/nextjs-app/.env
 
 RUN set -ex; \
     echo "NEXT_PUBLIC_BUILD_VERSION=\"${BUILD_VERSION}\"" >> apps/nextjs-app/.env; \
+    echo "DATABASE_URL=\"${DATABASE_URL}\"" >> apps/nextjs-app/.env; \
     NEXT_BUILD_ENV_LINT=false NODE_OPTIONS=--max-old-space-size=8192 pnpm g:build
         
 # Stage 3: Post Builder
@@ -64,12 +67,14 @@ ARG NODE_ENV
 ARG PORT
 ARG BRAND_NAME
 ARG NEXTJS_DIR
+ARG DATABASE_URL
 
 ENV TZ=${TZ} \
     NODE_ENV=${NODE_ENV} \
     PORT=${PORT} \
     BRAND_NAME=${BRAND_NAME} \
-    NEXTJS_DIR=${NEXTJS_DIR}
+    NEXTJS_DIR=${NEXTJS_DIR} \
+    DATABASE_URL=${DATABASE_URL}
 
 RUN apt-get update && apt-get install -y curl openssl && rm -rf /var/lib/apt/lists/*
 
