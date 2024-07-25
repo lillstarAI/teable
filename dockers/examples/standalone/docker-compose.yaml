@@ -18,6 +18,11 @@ services:
     depends_on:
       teable-db-migrate:
         condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   teable-db:
     image: postgres:15.4
@@ -26,6 +31,7 @@ services:
       - '42345:5432'
     volumes:
       - ./docker/db/data:/var/lib/postgresql/data:rw
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     environment:
       - TZ=${TIMEZONE}
       - POSTGRES_DB=${POSTGRES_DB}
@@ -49,6 +55,38 @@ services:
     depends_on:
       teable-db:
         condition: service_healthy
+    command: ["./wait-for-it.sh", "teable-db:5432", "--", "node", "/prisma/scripts/db-migrate.mjs"]
+
+  netdata:
+    image: netdata/netdata:latest
+    container_name: netdata
+    hostname: teable-netdata
+    ports:
+      - 19999:19999
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - netdataconfig:/etc/netdata
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./postgresql.conf:/etc/netdata/go.d/postgresql.conf:ro
+    environment:
+      - PGHOST=teable-db
+      - PGPORT=5432
+      - PGDATABASE=${POSTGRES_DB}
+      - PGUSER=${NETDATA_USER}
+      - PGPASSWORD=${NETDATA_PASSWORD}
+    networks:
+      - teable-standalone
+    restart: unless-stopped
 
 networks:
   teable-standalone:
@@ -58,3 +96,6 @@ networks:
 volumes:
   teable-data: {}
   teable-db: {}
+  netdataconfig:
+  netdatalib:
+  netdatacache:
