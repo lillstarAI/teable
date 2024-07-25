@@ -79,7 +79,7 @@ services:
       - teable-swarm
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set teable-storage http://teable-storage:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY};
+      /usr/bin/mc alias set ${ALIAS} ${MINIO} ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY};
       /usr/bin/mc mb teable-storage/public;
       /usr/bin/mc anonymous set public teable-storage/public;
       /usr/bin/mc mb teable-storage/private;
