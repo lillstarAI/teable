@@ -61,6 +61,10 @@ services:
     environment:
       - TZ=${TIMEZONE:-Europe/Stockholm}
       - PRISMA_DATABASE_URL=${PRISMA_DATABASE_URL}
+      - BUILD_VERSION=${BUILD_VERSION:-1.0.0}
+    volumes:
+      - ./packages/db-main-prisma/prisma:/prisma
+      - ./prisma/scripts:/scripts
     networks:
       - teable-standalone
     depends_on:
