@@ -14,6 +14,7 @@ services:
     environment:
       - TZ=${TIMEZONE:-Europe/Stockholm}
       - NEXT_ENV_IMAGES_ALL_REMOTE=true
+      - DATABASE_URL=${PRISMA_DATABASE_URL}
     networks:
       - teable-standalone
     depends_on:
@@ -26,6 +27,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    command: ["sh", "-c", "pnpm g:build && node apps/nestjs-backend/dist/index.js"]
 
   teable-db:
     image: postgres:15.4
@@ -37,16 +39,22 @@ services:
       # - ./docker/db/data:/var/lib/postgresql/data:rw  # Uncomment to use bind mount
     environment:
       - TZ=${TIMEZONE:-Europe/Stockholm}
-      - POSTGRES_DB=${POSTGRES_DB:-teable}
-      - POSTGRES_USER=${POSTGRES_USER:-teable}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     networks:
       - teable-standalone
     healthcheck:
-      test: ['CMD-SHELL', "pg_isready -U ${POSTGRES_USER:-teable} -d ${POSTGRES_DB:-teable}"]
+      test: ['CMD-SHELL', "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 3s
       retries: 3
+    command: 
+      - "postgres"
+      - "-c"
+      - "max_connections=1000"
+      - "-c"
+      - "shared_buffers=1GB"
 
   teable-db-migrate:
     image: ghcr.io/teableio/teable-db-migrate:latest
@@ -58,6 +66,7 @@ services:
     depends_on:
       teable-db:
         condition: service_healthy
+    command: ["sh", "-c", "sleep 10 && node /prisma/scripts/db-migrate.mjs"]
 
 networks:
   teable-standalone:
