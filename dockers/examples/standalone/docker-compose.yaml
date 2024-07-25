@@ -31,7 +31,12 @@ services:
     depends_on:
       teable-db:
         condition: service_healthy
-    command: ["sh", "-c", "sleep 10 && node /prisma/scripts/db-migrate.mjs"]
+      command: > 
+      sh -c "
+      npm install -g zx &&
+      sleep 10 &&
+      node /prisma/scripts/db-migrate.mjs
+    "
 
   teable:
     image: ghcr.io/teableio/teable:latest
