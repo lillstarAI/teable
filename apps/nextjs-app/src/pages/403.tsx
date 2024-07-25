@@ -1,21 +1,14 @@
 import type { GetStaticPropsContext } from 'next';
-import { systemConfig } from '@/features/i18n/system.config';
-import { ForbiddenPage } from '@/features/system/pages';
-import { getServerSideTranslations } from '@/lib/i18n';
+import { PaymentRequiredPage } from '@/features/system/pages';
 
-export const getStaticProps = async (context: GetStaticPropsContext) => {
-  const { locale = 'en' } = context;
-
-  const inlinedTranslation = await getServerSideTranslations(locale, systemConfig.i18nNamespaces);
-
+export const getStaticProps = async ({ locale = 'en' }: GetStaticPropsContext) => {
   return {
     props: {
-      locale: locale,
-      ...inlinedTranslation,
+      locale,
     },
   };
 };
 
 export default function Custom403() {
-  return <ForbiddenPage />;
+  return <PaymentRequiredPage />;
 }
