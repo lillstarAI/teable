@@ -1,14 +1,7 @@
-import type { GetStaticPropsContext } from 'next';
 import { PaymentRequiredPage } from '@/features/system/pages';
 
-export const getStaticProps = async ({ locale = 'en' }: GetStaticPropsContext) => {
-  return {
-    props: {
-      locale,
-    },
-  };
-};
+const CustomErrorPage = () => <PaymentRequiredPage />;
 
-export default function Custom404() {
-  return <PaymentRequiredPage />;
-}
+CustomErrorPage.getInitialProps = () => ({});
+
+export default CustomErrorPage;
