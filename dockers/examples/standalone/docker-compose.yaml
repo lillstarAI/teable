@@ -8,26 +8,19 @@ services:
       - '3000:3000'
     volumes:
       - teable-data:/app/.assets:rw
-      # - ./docker/teable/data:/app/.assets:rw  # Uncomment to use bind mount
+      # you may use a bind-mounted host directory instead,
+      # so that it is harder to accidentally remove the volume and lose all your data!
+      # - ./docker/teable/data:/app/.assets:rw
     env_file:
       - .env
     environment:
-      - TZ=${TIMEZONE:-Europe/Stockholm}
+      - TZ=${TIMEZONE}
       - NEXT_ENV_IMAGES_ALL_REMOTE=true
-      - DATABASE_URL=${PRISMA_DATABASE_URL}
     networks:
       - teable-standalone
     depends_on:
-      teable-db:
-        condition: service_healthy
       teable-db-migrate:
         condition: service_completed_successfully
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    command: ["sh", "-c", "pnpm g:build && node apps/nestjs-backend/dist/index.js"]
 
   teable-db:
     image: postgres:15.4
@@ -35,42 +28,30 @@ services:
     ports:
       - '42345:5432'
     volumes:
-      - teable-db:/var/lib/postgresql/data:rw
-      # - ./docker/db/data:/var/lib/postgresql/data:rw  # Uncomment to use bind mount
+      - ./docker/db/data:/var/lib/postgresql/data:rw
     environment:
-      - TZ=${TIMEZONE:-Europe/Stockholm}
+      - TZ=${TIMEZONE}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     networks:
       - teable-standalone
     healthcheck:
-      test: ['CMD-SHELL', "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ['CMD-SHELL', "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'"]
       interval: 10s
       timeout: 3s
       retries: 3
-    command: 
-      - "postgres"
-      - "-c"
-      - "max_connections=1000"
-      - "-c"
-      - "shared_buffers=1GB"
 
   teable-db-migrate:
     image: ghcr.io/teableio/teable-db-migrate:latest
     environment:
-      - TZ=${TIMEZONE:-Europe/Stockholm}
-      - PRISMA_DATABASE_URL=${PRISMA_DATABASE_URL}
-      - BUILD_VERSION=${BUILD_VERSION:-1.0.0}
-    volumes:
-      - ./packages/db-main-prisma/prisma:/prisma
-      - ./prisma/scripts:/scripts
+      - TZ=${TIMEZONE}
+      - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
     networks:
       - teable-standalone
     depends_on:
       teable-db:
         condition: service_healthy
-    command: ["sh", "-c", "sleep 10 && node /prisma/scripts/db-migrate.mjs"]
 
 networks:
   teable-standalone:
