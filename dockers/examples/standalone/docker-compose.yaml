@@ -4,7 +4,7 @@ services:
   teable:
     image: ghcr.io/teableio/teable:latest
     restart: always
-    ports:
+    expose:
       - '3000:3000'
       - '3001:3001'
     volumes:
