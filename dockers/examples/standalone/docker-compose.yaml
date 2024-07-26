@@ -13,19 +13,18 @@ services:
       - NEXT_ENV_IMAGES_ALL_REMOTE=true
       - TEABLE_ORIGIN=${TEABLE_ORIGIN}
       - BACKEND_STORAGE_PROVIDER=minio
-      - BACKEND_STORAGE_MINIO_ENDPOINT=http://minio:9000
+      - BACKEND_STORAGE_MINIO_ENDPOINT=${project.BACKEND_STORAGE_MINIO_ENDPOINT:-https://minio:9000}
       - BACKEND_STORAGE_MINIO_PORT=9000
-      - BACKEND_STORAGE_MINIO_USE_SSL=false
+      - BACKEND_STORAGE_MINIO_USE_SSL=true
       - BACKEND_STORAGE_MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - BACKEND_STORAGE_MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
       - BACKEND_STORAGE_PUBLIC_BUCKET=public
       - BACKEND_STORAGE_PRIVATE_BUCKET=private
-      - CACHE_DRIVER=s3
-      - CACHE_S3_BUCKET=teable-cache
-      - CACHE_S3_ENDPOINT=http://minio:9000
-      - CACHE_S3_KEY=${MINIO_ROOT_USER}
-      - CACHE_S3_SECRET=${MINIO_ROOT_PASSWORD}
-      - CACHE_S3_REGION=us-east-1
+      # s3 storage
+      - BACKEND_STORAGE_S3_ENDPOINT=${project.BACKEND_STORAGE_S3_ENDPOINT:-https://minio:9000}
+      - BACKEND_STORAGE_S3_ACCESS_KEY=${project.BACKEND_STORAGE_S3_ACCESS_KEY}
+      - BACKEND_STORAGE_S3_SECRET_KEY=${project.BACKEND_STORAGE_S3_SECRET_KEY}
+      - BACKEND_STORAGE_PROVIDER=s3
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
     networks:
       - teable-network
@@ -83,9 +82,11 @@ services:
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     volumes:
       - minio-data:/data
+      - /etc/letsencrypt/live/teable.se/fullchain.pem:/root/.minio/certs/public.crt
+      - /etc/letsencrypt/live/teable.se/privkey.pem:/root/.minio/certs/private.key
     command: server /data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "https://localhost:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
@@ -99,7 +100,7 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+      /usr/bin/mc alias set myminio https://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
       /usr/bin/mc mb myminio/public || true;
       /usr/bin/mc mb myminio/private || true;
       /usr/bin/mc mb myminio/teable-cache || true;
