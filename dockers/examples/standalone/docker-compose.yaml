@@ -61,32 +61,29 @@ services:
       - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
     networks:
       - teable-network
-    depends_on:
-      teable-db:
-        condition: service_healthy
     restart: "no"
 
-  minio:
-    image: minio/minio
-    container_name: minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
-    volumes:
-      - minio-data:/data
-      - /etc/letsencrypt/live/minio-server.teable.se/fullchain.pem:/root/.minio/certs/public.crt:ro
-      - /etc/letsencrypt/live/minio-server.teable.se/privkey.pem:/root/.minio/certs/private.key:ro
-    command: server /data --console-address ":9001" --certs-dir /root/.minio/certs
-    healthcheck:
-      test: ["CMD", "curl", "-f", "https://minio-server.teable.se:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-    networks:
-      - teable-network
+minio:
+  image: minio/minio
+  container_name: minio
+  ports:
+    - "9000:9000"
+    - "9001:9001"
+  environment:
+    - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+    - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+  volumes:
+    - minio-data:/data
+    - /etc/letsencrypt/live/minio-server.teable.se/fullchain.pem:/root/.minio/certs/public.crt:ro
+    - /etc/letsencrypt/live/minio-server.teable.se/privkey.pem:/root/.minio/certs/private.key:ro
+  command: server /data --console-address ":9001" --certs-dir /root/.minio/certs
+  healthcheck:
+    test: ["CMD", "curl", "-f", "https://minio-server.teable.se:9000/minio/health/live"]
+    interval: 30s
+    timeout: 20s
+    retries: 3
+  networks:
+    - teable-network
 
   minio-init:
     image: minio/mc
