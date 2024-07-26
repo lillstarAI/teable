@@ -12,10 +12,10 @@ services:
       - TZ=${TIMEZONE}
       - NEXT_ENV_IMAGES_ALL_REMOTE=${NEXT_ENV_IMAGES_ALL_REMOTE}
       - TEABLE_ORIGIN=${TEABLE_ORIGIN}
-      - BACKEND_STORAGE_PROVIDER=${BACKEND_STORAGE_PROVIDER}
-      - BACKEND_STORAGE_MINIO_ENDPOINT=${BACKEND_STORAGE_MINIO_ENDPOINT}
-      - BACKEND_STORAGE_MINIO_PORT=${BACKEND_STORAGE_MINIO_PORT}
-      - BACKEND_STORAGE_MINIO_USE_SSL=${BACKEND_STORAGE_MINIO_USE_SSL}
+      - BACKEND_STORAGE_PROVIDER=minio
+      - BACKEND_STORAGE_MINIO_ENDPOINT=https://server.minio.teable.se:9000
+      - BACKEND_STORAGE_MINIO_PORT=9000
+      - BACKEND_STORAGE_MINIO_USE_SSL=true
       - BACKEND_STORAGE_MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - BACKEND_STORAGE_MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
       - BACKEND_STORAGE_PUBLIC_BUCKET=${BACKEND_STORAGE_PUBLIC_BUCKET}
@@ -38,7 +38,7 @@ services:
     image: postgres:15.4
     restart: always
     ports:
-      - '127.0.0.1:42346:5432'
+      - '127.0.0.1:42346:5432'  # Ändrad port
     volumes:
       - postgres-data:/var/lib/postgresql/data:rw
     environment:
@@ -77,11 +77,11 @@ services:
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     volumes:
       - minio-data:/data
-      - /etc/letsencrypt/live/server.minio.teable.se/fullchain.pem:/root/.minio/certs/CAs/public.crt:ro
+      - /etc/letsencrypt/live/server.minio.teable.se/fullchain.pem:/root/.minio/certs/public.crt:ro
       - /etc/letsencrypt/live/server.minio.teable.se/privkey.pem:/root/.minio/certs/private.key:ro
     command: server /data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "https://server.minio.teable.se:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
