@@ -23,7 +23,7 @@ services:
       - BACKEND_STORAGE_PRIVATE_BUCKET=${BACKEND_STORAGE_PRIVATE_BUCKET}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
     networks:
-      - teable-network
+      - teable-standalone
     depends_on:
       teable-db-migrate:
         condition: service_completed_successfully
@@ -48,7 +48,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     networks:
-      - teable-network
+      - teable-standalone
     healthcheck:
       test: ['CMD-SHELL', "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -59,9 +59,9 @@ services:
     image: ghcr.io/teableio/teable-db-migrate:latest
     environment:
       - TZ=${TIMEZONE}
-      - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
+      - PRISMA_DATABASE_URL=${PRISMA_DATABASE_URL}
     networks:
-      - teable-network
+      - teable-standalone
     depends_on:
       teable-db:
         condition: service_healthy
@@ -82,12 +82,12 @@ services:
       - /etc/letsencrypt/live/${MINIO_SERVER_HOST}/privkey.pem:/root/.minio/certs/private.key:ro
     command: server /data --console-address ":9001" --certs-dir /root/.minio/certs
     healthcheck:
-      test: ["CMD", "curl", "-f", "${MINIO}:${BACKEND_STORAGE_MINIO_PORT}/minio/health/live"]
+      test: ["CMD", "curl", "-f", "https://${MINIO_SERVER_HOST}:${BACKEND_STORAGE_MINIO_PORT}/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
     networks:
-      - teable-network
+      - teable-standalone
 
   minio-init:
     image: minio/mc
@@ -96,14 +96,14 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set myminio ${MINIO}:${BACKEND_STORAGE_MINIO_PORT} ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+      /usr/bin/mc alias set myminio https://${MINIO_SERVER_HOST}:${BACKEND_STORAGE_MINIO_PORT} ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
       /usr/bin/mc mb myminio/public || true;
       /usr/bin/mc mb myminio/private || true;
       /usr/bin/mc mb myminio/teable-cache || true;
       exit 0;
       "
     networks:
-      - teable-network
+      - teable-standalone
 
   coolify-realtime:
     image: quay.io/soketi/soketi:1.6-16-alpine
@@ -112,15 +112,14 @@ services:
     ports:
       - "3001:3001"
     networks:
-      - teable-network
+      - teable-standalone
 
 networks:
-  teable-network:
-    name: teable-network
+  teable-standalone:
+    name: teable-standalone-network
     driver: bridge
 
 volumes:
   teable-data: {}
-  minio-data: {}
   teable-db: {}
-  postgres-data: {}
+  minio-data: {}
