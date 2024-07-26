@@ -26,19 +26,25 @@ services:
       - CACHE_S3_KEY=${MINIO_ROOT_USER}
       - CACHE_S3_SECRET=${MINIO_ROOT_PASSWORD}
       - CACHE_S3_REGION=us-east-1
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
     networks:
-      - teable-standalone
+      - teable-network
     depends_on:
       teable-db-migrate:
         condition: service_completed_successfully
       minio:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   teable-db:
     image: postgres:15.4
     restart: always
     ports:
-      - '42345:5432'
+      - '127.0.0.1:42345:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data:rw
     environment:
@@ -47,9 +53,9 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     networks:
-      - teable-standalone
+      - teable-network
     healthcheck:
-      test: ['CMD-SHELL', "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'"]
+      test: ['CMD-SHELL', "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -60,7 +66,7 @@ services:
       - TZ=${TIMEZONE}
       - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
     networks:
-      - teable-standalone
+      - teable-network
     depends_on:
       teable-db:
         condition: service_healthy
@@ -70,8 +76,8 @@ services:
     image: minio/minio
     container_name: minio
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
@@ -84,11 +90,27 @@ services:
       timeout: 20s
       retries: 3
     networks:
-      - teable-standalone
+      - teable-network
+
+  minio-init:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+      /usr/bin/mc mb myminio/public;
+      /usr/bin/mc mb myminio/private;
+      /usr/bin/mc mb myminio/teable-cache;
+      exit 0;
+      "
+    networks:
+      - teable-network
 
 networks:
-  teable-standalone:
-    name: teable-standalone-network
+  teable-network:
+    name: teable-network
     driver: bridge
 
 volumes:
