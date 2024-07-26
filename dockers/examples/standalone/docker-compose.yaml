@@ -6,6 +6,7 @@ services:
     restart: always
     ports:
       - '3000:3000'
+      - '3001:3001'
     volumes:
       - teable-data:/app/.assets:rw
     environment:
@@ -13,8 +14,8 @@ services:
       - NEXT_ENV_IMAGES_ALL_REMOTE=${NEXT_ENV_IMAGES_ALL_REMOTE}
       - TEABLE_ORIGIN=${TEABLE_ORIGIN}
       - BACKEND_STORAGE_PROVIDER=minio
-      - BACKEND_STORAGE_MINIO_ENDPOINT=https://minio-server.teable.se:9000
-      - BACKEND_STORAGE_MINIO_PORT=9000
+      - BACKEND_STORAGE_MINIO_ENDPOINT=${BACKEND_STORAGE_MINIO_ENDPOINT}
+      - BACKEND_STORAGE_MINIO_PORT=${BACKEND_STORAGE_MINIO_PORT}
       - BACKEND_STORAGE_MINIO_USE_SSL=true
       - BACKEND_STORAGE_MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - BACKEND_STORAGE_MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
@@ -38,9 +39,9 @@ services:
     image: postgres:15.4
     restart: always
     ports:
-      - '127.0.0.1:42346:5432'  # Ändrad port
+      - '127.0.0.1:42346:5432'
     volumes:
-      - postgres-data:/var/lib/postgresql/data:rw
+      - teable-db:/var/lib/postgresql/data:rw
     environment:
       - TZ=${TIMEZONE}
       - POSTGRES_DB=${POSTGRES_DB}
@@ -77,11 +78,11 @@ services:
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     volumes:
       - minio-data:/data
-      - /etc/letsencrypt/live/minio-server.teable.se/fullchain.pem:/root/.minio/certs/public.crt:ro
-      - /etc/letsencrypt/live/minio-server.teable.se/privkey.pem:/root/.minio/certs/private.key:ro
+      - /etc/letsencrypt/live/${MINIO_SERVER_HOST}/fullchain.pem:/root/.minio/certs/public.crt:ro
+      - /etc/letsencrypt/live/${MINIO_SERVER_HOST}/privkey.pem:/root/.minio/certs/private.key:ro
     command: server /data --console-address ":9001" --certs-dir /root/.minio/certs
     healthcheck:
-      test: ["CMD", "curl", "-f", "https://minio-server.teable.se:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "${MINIO}:${BACKEND_STORAGE_MINIO_PORT}/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
@@ -95,12 +96,21 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set myminio https://minio-server.teable.se:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+      /usr/bin/mc alias set myminio ${MINIO}:${BACKEND_STORAGE_MINIO_PORT} ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
       /usr/bin/mc mb myminio/public || true;
       /usr/bin/mc mb myminio/private || true;
       /usr/bin/mc mb myminio/teable-cache || true;
       exit 0;
       "
+    networks:
+      - teable-network
+
+  coolify-realtime:
+    image: quay.io/soketi/soketi:1.6-16-alpine
+    container_name: coolify-realtime
+    restart: always
+    ports:
+      - "3001:3001"
     networks:
       - teable-network
 
@@ -112,4 +122,5 @@ networks:
 volumes:
   teable-data: {}
   minio-data: {}
+  teable-db: {}
   postgres-data: {}
