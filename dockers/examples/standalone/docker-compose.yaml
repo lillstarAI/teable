@@ -12,11 +12,27 @@ services:
       - TZ=${TIMEZONE}
       - NEXT_ENV_IMAGES_ALL_REMOTE=true
       - TEABLE_ORIGIN=${TEABLE_ORIGIN}
+      - BACKEND_STORAGE_PROVIDER=minio
+      - BACKEND_STORAGE_MINIO_ENDPOINT=http://minio:9000
+      - BACKEND_STORAGE_MINIO_PORT=9000
+      - BACKEND_STORAGE_MINIO_USE_SSL=false
+      - BACKEND_STORAGE_MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - BACKEND_STORAGE_MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      - BACKEND_STORAGE_PUBLIC_BUCKET=public
+      - BACKEND_STORAGE_PRIVATE_BUCKET=private
+      - CACHE_DRIVER=s3
+      - CACHE_S3_BUCKET=teable-cache
+      - CACHE_S3_ENDPOINT=http://minio:9000
+      - CACHE_S3_KEY=${MINIO_ROOT_USER}
+      - CACHE_S3_SECRET=${MINIO_ROOT_PASSWORD}
+      - CACHE_S3_REGION=us-east-1
     networks:
       - teable-standalone
     depends_on:
       teable-db-migrate:
         condition: service_completed_successfully
+      minio:
+        condition: service_healthy
 
   teable-db:
     image: postgres:15.4
@@ -24,7 +40,7 @@ services:
     ports:
       - '42345:5432'
     volumes:
-      - ./docker/db/data:/var/lib/postgresql/data:rw
+      - postgres-data:/var/lib/postgresql/data:rw
     environment:
       - TZ=${TIMEZONE}
       - POSTGRES_DB=${POSTGRES_DB}
@@ -50,6 +66,26 @@ services:
         condition: service_healthy
     restart: "no"
 
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - teable-standalone
+
 networks:
   teable-standalone:
     name: teable-standalone-network
@@ -57,3 +93,5 @@ networks:
 
 volumes:
   teable-data: {}
+  minio-data: {}
+  postgres-data: {}
