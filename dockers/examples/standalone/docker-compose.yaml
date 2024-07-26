@@ -6,6 +6,7 @@ services:
     restart: always
     ports:
       - '3000:3000'
+      - '3002:3001'
     volumes:
       - teable-data:/app/.assets:rw
     environment:
@@ -20,7 +21,7 @@ services:
       - BACKEND_STORAGE_MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
       - BACKEND_STORAGE_PUBLIC_BUCKET=${BACKEND_STORAGE_PUBLIC_BUCKET}
       - BACKEND_STORAGE_PRIVATE_BUCKET=${BACKEND_STORAGE_PRIVATE_BUCKET}
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
     networks:
       - teable-standalone
     depends_on:
@@ -58,7 +59,7 @@ services:
     image: ghcr.io/teableio/teable-db-migrate:latest
     environment:
       - TZ=${TIMEZONE}
-      - PRISMA_DATABASE_URL=${PRISMA_DATABASE_URL}
+      - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
     networks:
       - teable-standalone
     depends_on:
@@ -109,7 +110,7 @@ services:
     container_name: coolify-realtime
     restart: always
     ports:
-      - "3001:3001"
+      - "3002:3001"
     networks:
       - teable-standalone
 
