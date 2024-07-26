@@ -6,7 +6,6 @@ services:
     restart: always
     ports:
       - '3000:3000'
-      - '3001:3001'
     volumes:
       - teable-data:/app/.assets:rw
     environment:
@@ -21,7 +20,7 @@ services:
       - BACKEND_STORAGE_MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
       - BACKEND_STORAGE_PUBLIC_BUCKET=${BACKEND_STORAGE_PUBLIC_BUCKET}
       - BACKEND_STORAGE_PRIVATE_BUCKET=${BACKEND_STORAGE_PRIVATE_BUCKET}
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
+      - DATABASE_URL=${DATABASE_URL}
     networks:
       - teable-standalone
     depends_on:
@@ -37,7 +36,7 @@ services:
     image: postgres:15.4
     restart: always
     ports:
-      - '127.0.0.1:42345:5432'
+      - '42345:5432'
     volumes:
       - teable-db:/var/lib/postgresql/data:rw
     environment:
@@ -57,13 +56,10 @@ services:
     image: ghcr.io/teableio/teable-db-migrate:latest
     environment:
       - TZ=${TIMEZONE}
-      - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
-    networks:
-      - teable-standalone
+      - PRISMA_DATABASE_URL=${PRISMA_DATABASE_URL}
     depends_on:
       teable-db:
         condition: service_healthy
-    restart: "no"
 
 networks:
   teable-standalone:
