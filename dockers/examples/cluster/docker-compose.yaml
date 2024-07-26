@@ -27,7 +27,7 @@ services:
     image: 'redis:alpine'
     restart: always
     expose:
-      - '6380/4'
+      - '6379'
     networks:
       - teable-standalone
       - q08gwww
@@ -45,16 +45,15 @@ services:
     image: minio/minio
     restart: always
     expose:
-      - '9000'
-      - '9001'
+      - '${BACKEND_STORAGE_MINIO_PORT}'
     volumes:
       - 'q08gwww-minio-data:/data'
     environment:
-      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
-      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+      - MINIO_ROOT_USER=${MINIO_ROOT_PASSWORD}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     command: 'server --console-address ":9001" /data'
     healthcheck:
-      test: ["CMD", "curl", "-f", "https://minio-server.teable.se:9001/minio/health/live"]
+      test: ["CMD", "curl", "-f", "${MINIO}/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
