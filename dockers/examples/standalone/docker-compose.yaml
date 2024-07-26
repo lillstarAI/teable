@@ -22,7 +22,6 @@ services:
       - BACKEND_STORAGE_PUBLIC_BUCKET=${BACKEND_STORAGE_PUBLIC_BUCKET}
       - BACKEND_STORAGE_PRIVATE_BUCKET=${BACKEND_STORAGE_PRIVATE_BUCKET}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
-      - WEBSOCKET_SERVER_URL=ws://coolify-realtime:6001 # Lägg till denna rad
     networks:
       - teable-standalone
     depends_on:
@@ -108,24 +107,9 @@ services:
     networks:
       - teable-standalone
 
-  coolify-realtime:
-    image: quay.io/soketi/soketi:1.6-16-alpine
-    container_name: coolify-realtime
-    restart: always
-    ports:
-      - "6001:6001"
-    networks:
-      - teable-standalone
-    environment:
-      - TZ=${TIMEZONE}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
 networks:
   teable-standalone:
+    name: teable-standalone-network
     driver: bridge
 
 volumes:
