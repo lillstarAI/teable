@@ -112,7 +112,7 @@ networks:
   teable-network:
     name: teable-network
     driver: bridge
-
+    
 volumes:
   teable-data: {}
   minio-data: {}
