@@ -13,7 +13,7 @@ services:
       - NEXT_ENV_IMAGES_ALL_REMOTE=${NEXT_ENV_IMAGES_ALL_REMOTE}
       - TEABLE_ORIGIN=${TEABLE_ORIGIN}
       - BACKEND_STORAGE_PROVIDER=minio
-      - BACKEND_STORAGE_MINIO_ENDPOINT=https://server.minio.teable.se:9000
+      - BACKEND_STORAGE_MINIO_ENDPOINT=https://minio-server.teable.se:9000
       - BACKEND_STORAGE_MINIO_PORT=9000
       - BACKEND_STORAGE_MINIO_USE_SSL=true
       - BACKEND_STORAGE_MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
@@ -38,7 +38,7 @@ services:
     image: postgres:15.4
     restart: always
     ports:
-      - '127.0.0.1:42346:5432'  # Ändrad port
+      - '127.0.0.1:42346:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data:rw
     environment:
@@ -77,11 +77,11 @@ services:
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     volumes:
       - minio-data:/data
-      - /etc/letsencrypt/live/server.minio.teable.se/fullchain.pem:/root/.minio/certs/public.crt:ro
-      - /etc/letsencrypt/live/server.minio.teable.se/privkey.pem:/root/.minio/certs/private.key:ro
+      - /etc/letsencrypt/live/minio-server.teable.se/fullchain.pem:/root/.minio/certs/public.crt:ro
+      - /etc/letsencrypt/live/minio-server.teable.se/privkey.pem:/root/.minio/certs/private.key:ro
     command: server /data --console-address ":9001" --certs-dir /root/.minio/certs
     healthcheck:
-      test: ["CMD", "curl", "-k", "https://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "https://minio-server.teable.se:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
@@ -95,7 +95,7 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set myminio https://server.minio.teable.se:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+      /usr/bin/mc alias set myminio https://minio-server.teable.se:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
       /usr/bin/mc mb myminio/public || true;
       /usr/bin/mc mb myminio/private || true;
       /usr/bin/mc mb myminio/teable-cache || true;
