@@ -8,6 +8,8 @@ services:
       - '3000:3000'
     volumes:
       - teable-data:/app/.assets:rw
+    env_file:
+      - .env
     environment:
       - TZ=${TIMEZONE}
       - NEXT_ENV_IMAGES_ALL_REMOTE=${NEXT_ENV_IMAGES_ALL_REMOTE}
