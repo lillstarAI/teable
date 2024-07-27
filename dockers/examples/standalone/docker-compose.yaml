@@ -2,10 +2,10 @@ version: '3.9'
 
 services:
   teable:
-    image: ghcr.io/teableio/teable:${BUILD_VERSION:-latest}
+    image: ghcr.io/teableio/teable:${BUILD_VERSION:-v1.0.0}
     restart: always
     ports:
-      - '3000:3000'
+      - ${TEABLE_PORT}:3000
     volumes:
       - teable-data:/app/.assets:rw
     environment:
@@ -43,7 +43,7 @@ services:
     image: postgres:15.4
     restart: always
     ports:
-      - '${POSTGRES_PORT:-5432}:5432'
+      - ${POSTGRES_PORT}:5432
     volumes:
       - teable-db:/var/lib/postgresql/data:rw
     environment:
@@ -59,7 +59,8 @@ services:
       retries: 5
 
   teable-db-migrate:
-    image: ghcr.io/teableio/teable-db-migrate:${BUILD_VERSION:-latest}
+    image: ghcr.io/teableio/teable-db-migrate:${BUILD_VERSION:-v1.0.0}
+    restart: on-failure
     environment:
       - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
     networks:
@@ -70,9 +71,10 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2023-07-21T21-12-44Z
+    restart: unless-stopped
     ports:
-      - "${BACKEND_STORAGE_MINIO_PORT:-9000}:9000"
-      - "9001:9001"
+      - ${MINIO_API_PORT}:9000
+      - ${MINIO_CONSOLE_PORT}:9001
     volumes:
       - minio-data:/data
     environment:
