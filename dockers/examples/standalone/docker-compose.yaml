@@ -82,13 +82,13 @@ services:
     restart: unless-stopped
     ports:
       - ${MINIO_API_PORT}:9000
-      - ${MINIO_CONSOLE_PORT}:9001
+      - ${MINIO_CONSOLE_PORT}:9003
     volumes:
       - minio-data:/data
     environment:
       - MINIO_ROOT_USER=${BACKEND_STORAGE_MINIO_ACCESS_KEY}
       - MINIO_ROOT_PASSWORD=${BACKEND_STORAGE_MINIO_SECRET_KEY}
-    command: server /data --console-address ":9001"
+    command: server /data --console-address ":9003"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
