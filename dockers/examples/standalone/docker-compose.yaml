@@ -1,4 +1,5 @@
 version: '3.9'
+
 services:
   teable:
     image: ghcr.io/teableio/teable:${BUILD_VERSION:-latest}
@@ -11,13 +12,13 @@ services:
       - TZ=${TIMEZONE}
       - NEXT_ENV_IMAGES_ALL_REMOTE=true
       - TEABLE_ORIGIN=${TEABLE_ORIGIN}
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
       - ASSET_PREFIX=${ASSET_PREFIX}
       - PUBLIC_ORIGIN=${PUBLIC_ORIGIN}
       - PUBLIC_DATABASE_PROXY=${PUBLIC_DATABASE_PROXY}
       - BACKEND_STORAGE_PROVIDER=${BACKEND_STORAGE_PROVIDER}
-      - BACKEND_STORAGE_MINIO_ENDPOINT=${BACKEND_STORAGE_MINIO_ENDPOINT}
-      - BACKEND_STORAGE_MINIO_PORT=${BACKEND_STORAGE_MINIO_PORT}
+      - BACKEND_STORAGE_MINIO_ENDPOINT=http://minio:9000
+      - BACKEND_STORAGE_MINIO_PORT=9000
       - BACKEND_STORAGE_MINIO_USE_SSL=${BACKEND_STORAGE_MINIO_USE_SSL}
       - BACKEND_STORAGE_MINIO_ACCESS_KEY=${BACKEND_STORAGE_MINIO_ACCESS_KEY}
       - BACKEND_STORAGE_MINIO_SECRET_KEY=${BACKEND_STORAGE_MINIO_SECRET_KEY}
@@ -31,10 +32,12 @@ services:
       - BACKEND_MAIL_AUTH_USER=${BACKEND_MAIL_AUTH_USER}
       - BACKEND_MAIL_AUTH_PASS=${BACKEND_MAIL_AUTH_PASS}
     networks:
-      - teable-standalone
+      - teable-network
     depends_on:
       teable-db-migrate:
         condition: service_completed_successfully
+      minio:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
@@ -49,25 +52,23 @@ services:
     volumes:
       - teable-db:/var/lib/postgresql/data:rw
     environment:
-      - TZ=${TIMEZONE}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     networks:
-      - teable-standalone
+      - teable-network
     healthcheck:
-      test: ['CMD-SHELL', "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
-      timeout: 3s
-      retries: 3
+      timeout: 5s
+      retries: 5
 
   teable-db-migrate:
     image: ghcr.io/teableio/teable-db-migrate:${BUILD_VERSION:-latest}
     environment:
-      - TZ=${TIMEZONE}
-      - PRISMA_DATABASE_URL=${PRISMA_DATABASE_URL}
+      - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
     networks:
-      - teable-standalone
+      - teable-network
     depends_on:
       teable-db:
         condition: service_healthy
@@ -75,12 +76,10 @@ services:
   minio:
     image: minio/minio
     ports:
-      - "${BACKEND_STORAGE_MINIO_PORT}:9000"
+      - "${BACKEND_STORAGE_MINIO_PORT:-9000}:9000"
       - "9001:9001"
     volumes:
-      - minio_data:/data
-      - ${MINIO_CERT_PATH}:/root/.minio/certs/public.crt
-      - ${MINIO_KEY_PATH}:/root/.minio/certs/private.key
+      - minio-data:/data
     environment:
       - MINIO_ROOT_USER=${BACKEND_STORAGE_MINIO_ACCESS_KEY}
       - MINIO_ROOT_PASSWORD=${BACKEND_STORAGE_MINIO_SECRET_KEY}
@@ -91,14 +90,14 @@ services:
       timeout: 20s
       retries: 3
     networks:
-      - teable-standalone
+      - teable-network
 
 networks:
-  teable-standalone:
-    name: teable-standalone-network
+  teable-network:
+    name: teable-network
     driver: bridge
 
 volumes:
-  teable-data: {}
-  teable-db: {}
-  minio_data: {}
+  teable-data:
+  teable-db:
+  minio-data:
