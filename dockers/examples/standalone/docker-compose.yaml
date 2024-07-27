@@ -91,7 +91,7 @@ services:
       - MINIO_KEY_PATH=${MINIO_KEY_PATH}
     volumes:
       - minio-data:/data
-      - /path/to/certs:/etc/letsencrypt/live/server.minio.teable.se:ro
+      - /etc/letsencrypt/live/minio-server.teable.se:/etc/letsencrypt/live/minio-server.teable.se:ro
     healthcheck:
       test: ["CMD-SHELL", "curl --insecure -f https://minio-server.teable.se:9000/minio/health/live || exit 1"]
       interval: 30s
