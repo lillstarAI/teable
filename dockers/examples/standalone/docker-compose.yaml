@@ -87,8 +87,8 @@ services:
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
-      - MINIO_CERT_PATH=${MINIO_CERT_PATH}
-      - MINIO_KEY_PATH=${MINIO_KEY_PATH}
+      - /etc/letsencrypt/live/minio-server.teable.se/fullchain.pem
+      - /etc/letsencrypt/live/minio-server.teable.se/privkey.pem
     volumes:
       - minio-data:/data
       - /etc/letsencrypt/live/minio-server.teable.se:/etc/letsencrypt/live/minio-server.teable.se:ro
