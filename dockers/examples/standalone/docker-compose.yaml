@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   teable:
-    image: ghcr.io/teableio/teable:${BUILD_VERSION:-v1.0.0}
+    image: ghcr.io/teableio/teable:latest
     restart: unless-stopped
     ports:
       - ${TEABLE_PORT}:3000
@@ -67,7 +67,7 @@ services:
       retries: 5
 
   teable-db-migrate:
-    image: ghcr.io/teableio/teable-db-migrate:${BUILD_VERSION:-v1.0.0}
+    image: ghcr.io/teableio/teable-db-migrate:latest
     restart: on-failure
     environment:
       - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
