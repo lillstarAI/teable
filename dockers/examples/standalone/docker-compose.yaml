@@ -3,7 +3,7 @@ version: '3.9'
 services:
   teable:
     image: ghcr.io/teableio/teable:${BUILD_VERSION:-v1.0.0}
-    restart: always
+    restart: unless-stopped
     ports:
       - ${TEABLE_PORT}:3000
     volumes:
@@ -38,10 +38,18 @@ services:
         condition: service_completed_successfully
       minio:
         condition: service_healthy
+      teable-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: ["sh", "-c", "echo 'Waiting for dependencies...' && sleep 30 && node /app/server.js"]
 
   teable-db:
     image: postgres:15.4
-    restart: always
+    restart: unless-stopped
     ports:
       - ${POSTGRES_PORT}:5432
     volumes:
