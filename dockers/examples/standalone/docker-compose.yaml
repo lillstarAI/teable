@@ -90,8 +90,8 @@ services:
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
-      - MINIO_CERT_PATH=/root/.minio/certs/public.crt
-      - MINIO_KEY_PATH=/root/.minio/certs/private.key
+      - MINIO_CERT_PATH=${MINIO_CERT_PATH}
+      - MINIO_KEY_PATH=${MINIO_KEY_PATH}
     healthcheck:
       test: ["CMD-SHELL", "curl --insecure -f https://minio-server.teable.se:9000/minio/health/live || exit 1"]
       interval: 30s
