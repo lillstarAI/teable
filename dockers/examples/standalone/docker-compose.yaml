@@ -90,7 +90,7 @@ services:
       - MINIO_ROOT_PASSWORD=${BACKEND_STORAGE_MINIO_SECRET_KEY}
     command: server /data --console-address ":9003"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "${MINIO}:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
