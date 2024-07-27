@@ -102,7 +102,7 @@ services:
 
 networks:
   teable-network:
-    name: teable-network
+    name: teable-network-standalone
     driver: bridge
 
 volumes:
