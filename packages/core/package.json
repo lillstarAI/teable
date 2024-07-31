@@ -49,7 +49,7 @@
     "dayjs": "1.11.10",
     "lodash": "4.17.21",
     "nanoid": "3.3.7",
-    "reflect-metadata": "0.2.1",
+    "reflect-metadata": "0.2.2",
     "papaparse": "5.4.1",
     "zod": "3.22.4"
   },
