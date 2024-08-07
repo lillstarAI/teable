@@ -31,9 +31,6 @@ services:
       - BACKEND_MAIL_SENDER_NAME=${BACKEND_MAIL_SENDER_NAME}
       - BACKEND_MAIL_AUTH_USER=${BACKEND_MAIL_AUTH_USER}
       - BACKEND_MAIL_AUTH_PASS=${BACKEND_MAIL_AUTH_PASS}
-      - API_BASE_URL=${TEABLE_ORIGIN}
-      - DISABLE_SWAGGER=true
-      - SKIP_OPENAPI_CODE_SAMPLES=true
     networks:
       - teable-network
     depends_on:
@@ -92,7 +89,6 @@ services:
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     volumes:
       - minio-data:/data
-      - /etc/letsencrypt/live/minio-server.teable.se:/etc/letsencrypt/live/minio-server.teable.se:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
