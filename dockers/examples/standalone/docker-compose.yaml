@@ -17,7 +17,7 @@ services:
       - PUBLIC_ORIGIN=${PUBLIC_ORIGIN}
       - PUBLIC_DATABASE_PROXY=${PUBLIC_DATABASE_PROXY}
       - BACKEND_STORAGE_PROVIDER=minio
-      - BACKEND_STORAGE_MINIO_ENDPOINT=minio-z0ww4cs-074910529165:9000
+      - BACKEND_STORAGE_MINIO_ENDPOINT=minio
       - BACKEND_STORAGE_MINIO_PORT=9000
       - BACKEND_STORAGE_MINIO_USE_SSL=false
       - BACKEND_STORAGE_MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
@@ -33,6 +33,7 @@ services:
       - BACKEND_MAIL_AUTH_PASS=${BACKEND_MAIL_AUTH_PASS}
       - DEBUG=minio*
       - NODE_ENV=production
+      - MINIO_DEBUG=true
     networks:
       - teable-network
     depends_on:
@@ -81,7 +82,118 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2023-07-21T21-12-44Z
-    container_name: minio-z0ww4cs-074910529165
+    container_name: minio
+    restart: unless-stopped
+    command: server /data --console-address ":9003"
+    ports:
+      - ${MINIO_API_PORT}:9000
+      - ${MINIO_CONSOLE_PORT}:9003
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - teable-network
+
+networks:
+  teable-network:
+    name: teable-network-standalone
+    driver: bridge
+
+volumes:
+  teable-data:
+  teable-db:
+  minio-data:version: '3.9'
+
+services:
+  teable:
+    image: ghcr.io/teableio/teable:latest
+    restart: unless-stopped
+    ports:
+      - ${TEABLE_PORT}:3000
+    volumes:
+      - teable-data:/app/.assets:rw
+    environment:
+      - TZ=${TIMEZONE}
+      - NEXT_ENV_IMAGES_ALL_REMOTE=true
+      - TEABLE_ORIGIN=${TEABLE_ORIGIN}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
+      - ASSET_PREFIX=${ASSET_PREFIX}
+      - PUBLIC_ORIGIN=${PUBLIC_ORIGIN}
+      - PUBLIC_DATABASE_PROXY=${PUBLIC_DATABASE_PROXY}
+      - BACKEND_STORAGE_PROVIDER=minio
+      - BACKEND_STORAGE_MINIO_ENDPOINT=minio
+      - BACKEND_STORAGE_MINIO_PORT=9000
+      - BACKEND_STORAGE_MINIO_USE_SSL=false
+      - BACKEND_STORAGE_MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - BACKEND_STORAGE_MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      - BACKEND_STORAGE_PUBLIC_BUCKET=${BACKEND_STORAGE_PUBLIC_BUCKET}
+      - BACKEND_STORAGE_PRIVATE_BUCKET=${BACKEND_STORAGE_PRIVATE_BUCKET}
+      - BACKEND_MAIL_HOST=${BACKEND_MAIL_HOST}
+      - BACKEND_MAIL_PORT=${BACKEND_MAIL_PORT}
+      - BACKEND_MAIL_SECURE=${BACKEND_MAIL_SECURE}
+      - BACKEND_MAIL_SENDER=${BACKEND_MAIL_SENDER}
+      - BACKEND_MAIL_SENDER_NAME=${BACKEND_MAIL_SENDER_NAME}
+      - BACKEND_MAIL_AUTH_USER=${BACKEND_MAIL_AUTH_USER}
+      - BACKEND_MAIL_AUTH_PASS=${BACKEND_MAIL_AUTH_PASS}
+      - DEBUG=minio*
+      - NODE_ENV=production
+      - MINIO_DEBUG=true
+    networks:
+      - teable-network
+    depends_on:
+      teable-db-migrate:
+        condition: service_completed_successfully
+      minio:
+        condition: service_healthy
+      teable-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: ["sh", "-c", "echo 'Waiting for dependencies...' && sleep 30 && node /app/server.js"]
+
+  teable-db:
+    image: postgres:15.4
+    restart: unless-stopped
+    ports:
+      - ${POSTGRES_PORT}:5432
+    volumes:
+      - teable-db:/var/lib/postgresql/data:rw
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - teable-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  teable-db-migrate:
+    image: ghcr.io/teableio/teable-db-migrate:latest
+    restart: on-failure
+    environment:
+      - PRISMA_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@teable-db:5432/${POSTGRES_DB}
+    networks:
+      - teable-network
+    depends_on:
+      teable-db:
+        condition: service_healthy
+
+  minio:
+    image: minio/minio:RELEASE.2023-07-21T21-12-44Z
+    container_name: minio
     restart: unless-stopped
     command: server /data --console-address ":9003"
     ports:
