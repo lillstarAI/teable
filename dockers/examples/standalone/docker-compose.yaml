@@ -17,11 +17,11 @@ services:
       - PUBLIC_ORIGIN=${PUBLIC_ORIGIN}
       - PUBLIC_DATABASE_PROXY=${PUBLIC_DATABASE_PROXY}
       - BACKEND_STORAGE_PROVIDER=${BACKEND_STORAGE_PROVIDER}
-      - BACKEND_STORAGE_MINIO_ENDPOINT=${BACKEND_STORAGE_MINIO_ENDPOINT}
+      - BACKEND_STORAGE_MINIO_ENDPOINT=http://minio:9000
       - BACKEND_STORAGE_MINIO_PORT=9000
-      - BACKEND_STORAGE_MINIO_USE_SSL=${BACKEND_STORAGE_MINIO_USE_SSL}
-      - BACKEND_STORAGE_MINIO_ACCESS_KEY=${BACKEND_STORAGE_MINIO_ACCESS_KEY}
-      - BACKEND_STORAGE_MINIO_SECRET_KEY=${BACKEND_STORAGE_MINIO_SECRET_KEY}
+      - BACKEND_STORAGE_MINIO_USE_SSL=false
+      - BACKEND_STORAGE_MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - BACKEND_STORAGE_MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
       - BACKEND_STORAGE_PUBLIC_BUCKET=${BACKEND_STORAGE_PUBLIC_BUCKET}
       - BACKEND_STORAGE_PRIVATE_BUCKET=${BACKEND_STORAGE_PRIVATE_BUCKET}
       - BACKEND_MAIL_HOST=${BACKEND_MAIL_HOST}
@@ -31,6 +31,9 @@ services:
       - BACKEND_MAIL_SENDER_NAME=${BACKEND_MAIL_SENDER_NAME}
       - BACKEND_MAIL_AUTH_USER=${BACKEND_MAIL_AUTH_USER}
       - BACKEND_MAIL_AUTH_PASS=${BACKEND_MAIL_AUTH_PASS}
+      - API_BASE_URL=${TEABLE_ORIGIN}
+      - DISABLE_SWAGGER=true
+      - SKIP_OPENAPI_CODE_SAMPLES=true
     networks:
       - teable-network
     depends_on:
@@ -87,13 +90,11 @@ services:
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
-      - /etc/letsencrypt/live/minio-server.teable.se/fullchain.pem
-      - /etc/letsencrypt/live/minio-server.teable.se/privkey.pem
     volumes:
       - minio-data:/data
       - /etc/letsencrypt/live/minio-server.teable.se:/etc/letsencrypt/live/minio-server.teable.se:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl --insecure -f https://minio-server.teable.se:9000/minio/health/live || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
