@@ -48,7 +48,7 @@
     "color": "4.2.3",
     "dayjs": "1.11.10",
     "lodash": "4.17.21",
-    "nanoid": "3.3.7",
+    "nanoid": "3.3.8",
     "reflect-metadata": "0.2.1",
     "papaparse": "5.4.1",
     "zod": "3.22.4"
