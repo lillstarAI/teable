@@ -49,7 +49,7 @@
   "dependencies": {
     "@prisma/client": "5.11.0",
     "prisma": "5.11.0",
-    "nanoid": "3.3.7"
+    "nanoid": "3.3.8"
   },
   "devDependencies": {
     "@soluble/dsn-parser": "1.9.2",
